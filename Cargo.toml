@@ -5,3 +5,6 @@ authors = ["SLMT <sam123456777@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+toml = "0.5"
+serde = { version = "1.0", features = ["derive"] }
+clap = "2.33.0"
