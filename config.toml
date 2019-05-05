@@ -1,6 +1,11 @@
 
 [system]
-user_name = "user"
+user_name = "admin0"
+
+[path]
+remote_work_dir = "auto-bencher-workspace"
+jdk_dir = "jdk1.8.0_211"
+local_jdk_path = "package/jdk-8u211-linux-x64.tar.gz"
 
 [machines]
 sequencers = []

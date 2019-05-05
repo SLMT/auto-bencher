@@ -1,12 +1,17 @@
 
+mod error;
 mod config;
+mod command;
 mod init_env;
 
 use clap::{Arg, ArgMatches, App};
 
+use error::BenchError;
 use config::Config;
 
 fn main() {
+    pretty_env_logger::init();
+
     let matches = App::new("Auto Bencher")
                        .version("1.0")
                        .author("Yu-Shan Lin <yslin@datalab.cs.nthu.edu.tw>")
@@ -22,18 +27,19 @@ fn main() {
     
     match execute(matches) {
         Ok(_) => println!("Auto Bencher finishes."),
-        Err(s) => eprintln!("Auto Bencher exits with an error:\n{}", s)
+        Err(BenchError::Throw(s)) => eprintln!("Auto Bencher exits with an error:\n{}", s),
+        Err(e) => eprintln!("Auto Bencher exits with an error:\n{:?}", e)
     }
 }
 
-fn execute(matches: ArgMatches) -> Result<(), String> {
+fn execute(matches: ArgMatches) -> Result<(), BenchError> {
      // Read the config
     let config_file_path = matches.value_of("config").unwrap_or("config.toml");
     let config = Config::from_file(&config_file_path)?;
 
     // Choose action according to the sub command
     if let Some(matches) = matches.subcommand_matches("init-env") {
-        init_env::execute(&config, matches);
+        init_env::execute(&config, matches)?;
     }
 
     Ok(())

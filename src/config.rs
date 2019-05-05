@@ -3,9 +3,12 @@ use std::io::Read;
 
 use serde::Deserialize;
 
+use crate::error::BenchError;
+
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub system: System,
+    pub path: Path,
     pub machines: Machines
 }
 
@@ -15,24 +18,31 @@ pub struct System {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct Path {
+    pub remote_work_dir: String,
+    pub jdk_dir: String,
+    pub local_jdk_path: String
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Machines {
     #[serde(skip)]
-    pub alls: Vec<String>,
+    pub all: Vec<String>,
     pub sequencers: Vec<String>,
     pub servers: Vec<String>,
     pub clients: Vec<String>
 }
 
 impl Config {
-    pub fn from_file(path: &str) -> Result<Config, String> {
+    pub fn from_file(path: &str) -> Result<Config, BenchError> {
         // Read the file
         let mut config_file = File::open(&path)
-            .map_err(|e| format!("cannot open config file: {}", e.to_string()))?;
+            .map_err(|e| BenchError::throw("cannot open config file", e))?;
         let mut config_str = String::new();
         config_file.read_to_string(&mut config_str)
-            .map_err(|e| format!("cannot read config file: {}", e.to_string()))?;
+            .map_err(|e| BenchError::throw("cannot read config file", e))?;
         let mut config: Config = toml::from_str(&config_str)
-            .map_err(|e| format!("cannot parse config file: {}", e.to_string()))?;
+            .map_err(|e| BenchError::throw("cannot parse config file", e))?;
 
         // All ips
         config.generate_all_ips();
@@ -42,13 +52,13 @@ impl Config {
 
     fn generate_all_ips(&mut self) {
         for ip in &self.machines.sequencers {
-            self.machines.alls.push(String::from(ip.as_str()));
+            self.machines.all.push(String::from(ip.as_str()));
         }
         for ip in &self.machines.servers {
-            self.machines.alls.push(String::from(ip.as_str()));
+            self.machines.all.push(String::from(ip.as_str()));
         }
         for ip in &self.machines.clients {
-            self.machines.alls.push(String::from(ip.as_str()));
+            self.machines.all.push(String::from(ip.as_str()));
         }
     }
 }
