@@ -4,6 +4,8 @@
 
 - `auto-bencher init-env`
     - 初始化與檢察環境
+- `auto-bencher clean`
+    - 清空環境，刪除所有此程式建立的檔案
 - `auto-bencher execute-cmd [CMD]`
     - 執行給定指令 `CMD`
 - `auto-bencher load [bench type] [# of nodes]`

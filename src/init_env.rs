@@ -73,7 +73,7 @@ fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
 fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
     trace!("checking java runtime on {}", ip);
 
-    let cmd = format!("{}/{}/bin/java", config.path.remote_work_dir, config.path.jdk_dir);
+    let cmd = format!("{}/{}/bin/java -version", config.path.remote_work_dir, config.path.jdk_dir);
 
     // Check if the java is installed
     match command::ssh(&config.system.user_name, ip, &cmd) {
