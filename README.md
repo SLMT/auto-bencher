@@ -15,6 +15,8 @@
 
 ### 期望功能
 
+- 必須要檢查 server 跟 client 是否都正常啟動
+- 能夠偵測 exception 以外的錯誤 (程式意外終止)
 - 能夠自動抓取 properties 產生 parameter file
 - 能夠合併 csv report，並另外產生一個 total summary 的 csv
 - log 先產生在外面，等到跑完之後再一併放回 results

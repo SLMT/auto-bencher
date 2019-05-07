@@ -29,14 +29,11 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
 
         // Check the working directory
         if !check_working_dir(&config, ip)? {
-            trace!("creating working dir for {}", ip);
             create_working_dir(&config, ip)?
         }
 
         // Check Java Runtime
         if !check_java_runtime(&config, ip)? {
-            trace!("sending jdk for {}", ip);
-
             send_jdk(config, ip)?;
             unpack_jdk(config, ip)?;
         }
@@ -114,7 +111,8 @@ fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
 fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
     trace!("unpacking {} on {}", config.path.jdk_package, ip);
     
-    let cmd = format!("tar -C {} -zxf {}", config.path.remote_work_dir, config.path.jdk_package);
+    let cmd = format!("tar -C {} -zxf {}/{}", config.path.remote_work_dir, 
+            config.path.remote_work_dir, config.path.jdk_package);
     command::ssh(&config.system.user_name, ip, &cmd)?;
     Ok(())
 }
