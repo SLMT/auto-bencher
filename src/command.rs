@@ -1,7 +1,7 @@
 
 use std::process::Command;
 
-use log::trace;
+use log::debug;
 
 use crate::error::BenchError;
 
@@ -13,7 +13,7 @@ pub fn ssh(user_name: &str, ip: &str, cmd: &str) -> Result<String, BenchError> {
             .output()
             .map_err(|e| BenchError::throw("execute command fails", e))?;
 
-    trace!("ssh {}@{} '{}'", user_name, ip, cmd);
+    debug!("executing: ssh {}@{} '{}'", user_name, ip, cmd);
     
     match result.status.code() {
         Some(127) => {
@@ -39,12 +39,13 @@ pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_pat
 
     if is_dir {
         command.arg("-r");
+        debug!("executing: scp -r {} {}@{}:{}", local_path, user_name, ip, remote_path);
+    } else {
+        debug!("executing: scp {} {}@{}:{}", local_path, user_name, ip, remote_path);
     }
     
     command.arg(local_path);
     command.arg(format!("{}@{}:{}", user_name, ip, remote_path));
-
-    trace!("{:?}", command);
 
     let output = command.output().map_err(|e| BenchError::throw("execute command fails", e))?;
 
@@ -68,6 +69,8 @@ pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_pat
 pub fn ls(path: &str) -> Result<String, BenchError> {
     let output = Command::new("ls").arg(path)
             .output().map_err(|e| BenchError::throw("executes ls fails", e))?;
+
+    debug!("executing: ls {}", path);
     
     match output.status.code() {
         Some(0) => {

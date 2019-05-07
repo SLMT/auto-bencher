@@ -2,7 +2,7 @@
 use std::process::Command;
 
 use clap::{ArgMatches, App, SubCommand};
-use log::trace;
+use log::{info, trace};
 use colored::*;
 
 use crate::error::BenchError;
@@ -63,7 +63,7 @@ fn check_working_dir(config: &Config, ip: &str) -> Result<bool, BenchError> {
 }
 
 fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
-    trace!("creating a working directory on {}", ip);
+    info!("creating a working directory on {}", ip);
 
     let cmd = format!("mkdir -p {}", config.path.remote_work_dir);
     command::ssh(&config.system.user_name, ip, &cmd)
@@ -71,7 +71,7 @@ fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
 }
 
 fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
-    trace!("checking java runtime on {}", ip);
+    info!("checking java runtime on {}", ip);
 
     let cmd = format!("{}/{}/bin/java -version", config.path.remote_work_dir, config.path.jdk_dir);
 
@@ -91,7 +91,7 @@ fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
 }
 
 fn check_local_jdk(config: &Config) -> Result<bool, BenchError> {
-    trace!("checking local jdk: {}", config.path.local_jdk_path);
+    info!("checking local jdk: {}", config.path.local_jdk_path);
 
     match command::ls(&config.path.local_jdk_path) {
         Ok(_) => Ok(true),
@@ -102,7 +102,7 @@ fn check_local_jdk(config: &Config) -> Result<bool, BenchError> {
 
 
 fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
-    trace!("sending JDK to {}", ip);
+    info!("sending JDK to {}", ip);
 
     command::scp(false, &config.system.user_name, ip, 
             &config.path.local_jdk_path, &config.path.remote_work_dir)?;
@@ -110,7 +110,7 @@ fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
 }
 
 fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
-    trace!("unpacking {} on {}", config.path.jdk_package, ip);
+    info!("unpacking {} on {}", config.path.jdk_package, ip);
     
     let cmd = format!("tar -C {} -zxf {}/{}", config.path.remote_work_dir, 
             config.path.remote_work_dir, config.path.jdk_package);
@@ -119,7 +119,7 @@ fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
 }
 
 fn remove_jdk_package(config: &Config, ip: &str) -> Result<(), BenchError> {
-    trace!("removing {} on {}", config.path.jdk_package, ip);
+    info!("removing {} on {}", config.path.jdk_package, ip);
     
     let cmd = format!("rm {}/{}", config.path.remote_work_dir, 
             config.path.jdk_package);
