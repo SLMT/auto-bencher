@@ -36,6 +36,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
         if !check_java_runtime(&config, ip)? {
             send_jdk(config, ip)?;
             unpack_jdk(config, ip)?;
+            remove_jdk_package(config, ip)?;
         }
 
         println!("{}", "checked".green());
@@ -113,6 +114,15 @@ fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
     
     let cmd = format!("tar -C {} -zxf {}/{}", config.path.remote_work_dir, 
             config.path.remote_work_dir, config.path.jdk_package);
+    command::ssh(&config.system.user_name, ip, &cmd)?;
+    Ok(())
+}
+
+fn remove_jdk_package(config: &Config, ip: &str) -> Result<(), BenchError> {
+    trace!("removing {} on {}", config.path.jdk_package, ip);
+    
+    let cmd = format!("rm {}/{}", config.path.remote_work_dir, 
+            config.path.jdk_package);
     command::ssh(&config.system.user_name, ip, &cmd)?;
     Ok(())
 }
