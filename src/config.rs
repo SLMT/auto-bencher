@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::path::PathBuf;
 
 use serde::Deserialize;
 
@@ -21,7 +22,9 @@ pub struct System {
 pub struct Path {
     pub remote_work_dir: String,
     pub jdk_dir: String,
-    pub local_jdk_path: String
+    pub local_jdk_path: String,
+    #[serde(skip)]
+    pub jdk_package: String
 }
 
 #[derive(Deserialize, Debug)]
@@ -46,6 +49,17 @@ impl Config {
 
         // All ips
         config.generate_all_ips();
+
+        // Get JDK package name
+        let path = PathBuf::from(&config.path.local_jdk_path);
+        match path.file_name() {
+            Some(f) => {
+                config.path.jdk_package = String::from(f.to_str().unwrap());
+            },
+            None => {
+                return Err(BenchError::message("cannot recognize JDK's package"));
+            }
+        }
 
         Ok(config)
     }

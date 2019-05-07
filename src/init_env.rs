@@ -36,9 +36,9 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
         // Check Java Runtime
         if !check_java_runtime(&config, ip)? {
             trace!("sending jdk for {}", ip);
-            // TODO: check local jdk pack
-            // TODO: send jdk
-            // TODO: unpack jdk
+
+            send_jdk(config, ip)?;
+            unpack_jdk(config, ip)?;
         }
 
         println!("{}", "checked".green());
@@ -65,13 +65,16 @@ fn check_working_dir(config: &Config, ip: &str) -> Result<bool, BenchError> {
 }
 
 fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
-    let cmd = format!("mkdir -p {}", config.path.remote_work_dir);
+    trace!("creating a working directory on {}", ip);
 
+    let cmd = format!("mkdir -p {}", config.path.remote_work_dir);
     command::ssh(&config.system.user_name, ip, &cmd)
         .map(|out| trace!("mkdir: {}", out))
 }
 
 fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
+    trace!("checking java runtime on {}", ip);
+
     let cmd = format!("{}/{}/bin/java", config.path.remote_work_dir, config.path.jdk_dir);
 
     // Check if the java is installed
@@ -90,6 +93,8 @@ fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
 }
 
 fn check_local_jdk(config: &Config) -> Result<bool, BenchError> {
+    trace!("checking local jdk: {}", config.path.local_jdk_path);
+
     match command::ls(&config.path.local_jdk_path) {
         Ok(_) => Ok(true),
         Err(BenchError::FileNotFound) => Ok(false),
@@ -99,5 +104,17 @@ fn check_local_jdk(config: &Config) -> Result<bool, BenchError> {
 
 
 fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
+    trace!("sending JDK to {}", ip);
+
+    command::scp(false, &config.system.user_name, ip, 
+            &config.path.local_jdk_path, &config.path.remote_work_dir)?;
+    Ok(())
+}
+
+fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
+    trace!("unpacking {} on {}", config.path.jdk_package, ip);
+    
+    let cmd = format!("tar -C {} -zxf {}", config.path.remote_work_dir, config.path.jdk_package);
+    command::ssh(&config.system.user_name, ip, &cmd)?;
     Ok(())
 }
