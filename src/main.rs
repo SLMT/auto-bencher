@@ -3,8 +3,10 @@ mod error;
 mod config;
 mod command;
 mod init_env;
+mod load;
 
 use clap::{Arg, ArgMatches, App};
+use colored::*;
 
 use error::BenchError;
 use config::Config;
@@ -23,12 +25,15 @@ fn main() {
                             .help("Sets the path to a config file")
                             .takes_value(true))
                        .subcommand(init_env::get_sub_command())
+                       .subcommand(load::get_sub_command())
                        .get_matches();
     
     match execute(matches) {
         Ok(_) => println!("Auto Bencher finishes."),
-        Err(BenchError::Throw(s)) => eprintln!("Auto Bencher exits with an error:\n{}", s),
-        Err(e) => eprintln!("Auto Bencher exits with an error:\n{:?}", e)
+        Err(BenchError::Throw(s)) => 
+            eprintln!("Auto Bencher exits with an {}:\n{}", "error".red(), s),
+        Err(e) => eprintln!("Auto Bencher exits with an {}:\n{:?}",
+                "error".red(), e),
     }
 }
 
@@ -40,6 +45,8 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
     // Choose action according to the sub command
     if let Some(matches) = matches.subcommand_matches("init-env") {
         init_env::execute(&config, matches)?;
+    } else if let Some(matches) = matches.subcommand_matches("load") {
+        load::execute(&config, matches)?;
     }
 
     Ok(())
