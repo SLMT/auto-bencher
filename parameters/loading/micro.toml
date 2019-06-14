@@ -1,0 +1,3 @@
+
+[vanillabench.properties]
+"org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "1"

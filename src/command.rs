@@ -5,7 +5,7 @@ use log::debug;
 
 use crate::error::{Result, BenchError};
 
-fn output_into_string(command: Command) -> Result<String> {
+fn output_into_string(mut command: Command) -> Result<String> {
     let cmd_str = format!("{:?}", command);
     debug!("executing: {}", cmd_str);
     let output = command.output()?;

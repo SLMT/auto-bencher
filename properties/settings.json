@@ -5,29 +5,10 @@
     },
     {
         "id": "org.vanilladb.bench.config.file",
-        "filename": "vanillabench.properties",
-        "properties": [
-            {
-                "short": "warmup_time",
-                "full": "org.vanilladb.bench.BenchmarkerParameters.WARM_UP_INTERVAL",
-                "default": "60000"
-            },
-            {
-                "short": "bench_time",
-                "full": "org.vanilladb.bench.BenchmarkerParameters.BENCHMARK_INTERVAL",
-                "default": "60000"
-            }
-        ]
+        "filename": "vanillabench.properties"
     },
     {
         "id": "org.vanilladb.core.config.file",
-        "filename": "vanilladb.properties",
-        "properties": [
-            {
-                "short": "buffer_pool_size",
-                "full": "org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE",
-                "default": "102400"
-            }
-        ]
+        "filename": "vanilladb.properties"
     }
 ]

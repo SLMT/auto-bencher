@@ -12,7 +12,7 @@ pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
                 .about("initializes the environment of all machines")
 }
 
-pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
+pub fn execute(config: &Config, _: &ArgMatches) -> Result<()> {
     println!("Starts initializing the environment");
 
     // Check local files

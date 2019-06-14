@@ -20,13 +20,14 @@ pub enum BenchError {
 
     // Wrapper
     ParseUtf8Error(std::string::FromUtf8Error),
-    PraseIntError(std::num::ParseIntError),
+    ParseIntError(std::num::ParseIntError),
     ParseTomlError(toml::de::Error),
+    ParseJsonError(serde_json::error::Error),
+    ParesPropertiesError(java_properties::PropertiesError),
     IoError(std::io::Error),
+
     // (message)
     Message(String)
-    // CommandFails(i32),
-    // Throw(String)
 }
 
 impl From<std::string::FromUtf8Error> for BenchError {
@@ -43,7 +44,19 @@ impl From<toml::de::Error> for BenchError {
 
 impl From<std::num::ParseIntError> for BenchError {
     fn from(error: std::num::ParseIntError) -> Self {
-        BenchError::PraseIntError(error)
+        BenchError::ParseIntError(error)
+    }
+}
+
+impl From<serde_json::error::Error> for BenchError {
+    fn from(error: serde_json::error::Error) -> Self {
+        BenchError::ParseJsonError(error)
+    }
+}
+
+impl From<java_properties::PropertiesError> for BenchError {
+    fn from(error: java_properties::PropertiesError) -> Self {
+        BenchError::ParesPropertiesError(error)
     }
 }
 
@@ -75,7 +88,10 @@ impl Error for BenchError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             BenchError::ParseUtf8Error(e) => Some(e),
+            BenchError::ParseIntError(e) => Some(e),
             BenchError::ParseTomlError(e) => Some(e),
+            BenchError::ParseJsonError(e) => Some(e),
+            BenchError::ParesPropertiesError(e) => Some(e),
             BenchError::IoError(e) => Some(e),
             _ => None,
         }

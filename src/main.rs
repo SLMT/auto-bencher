@@ -56,7 +56,9 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
     if let Some(matches) = matches.subcommand_matches("init-env") {
         init_env::execute(&config, matches)?;
     } else if let Some(matches) = matches.subcommand_matches("load") {
-        load::execute(&config, matches)?;
+        let map = properties::PropertiesFileMap::from_dir(&std::path::Path::new("properties"))?;
+        dbg!(map);
+        // load::execute(&config, matches)?;
     }
 
     Ok(())
