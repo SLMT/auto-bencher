@@ -1,0 +1,7 @@
+
+[vanilladb]
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1024 10240 102400"
+
+[vanillabench]
+"org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "1 2 3"
+"org.vanilladb.bench.BenchmarkerParameters.NUM_RTES" = "10 20 30"

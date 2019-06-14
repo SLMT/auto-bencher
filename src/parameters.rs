@@ -1,37 +1,50 @@
 
-use std::io::Read;
-use std::collections::HashMap;
-use std::str::FromStr;
 use std::path::Path;
 
 use toml::Value as TomlValue;
 
 use crate::error::Result;
 
-// TODO: implement this
-struct Parameter {
-    params_map: HashMap<String, HashMap<String, String>>
+#[derive(Debug, Clone)]
+pub struct Parameter<'a> {
+    // (filename, (property, value))
+    params: Vec<(&'a str, Vec<(&'a str, &'a str)>)>
 }
 
-// TODO: implement this
-struct ParameterIter {
+impl<'a> Parameter<'a> {
+    fn empty() -> Parameter<'a> {
+        Parameter {
+            params: Vec::new()
+        }
+    }
 
-}
+    // We assume that there will be a few files
+    // and no single line will be added twice
+    fn add_param(&mut self, filename: &'a str,
+            property: &'a str, value: &'a str) {
+        let mut found = false;
 
-impl Iterator for ParameterIter {
-    type Item = Parameter;
+        for (param_file, param_lines) in self.params.iter_mut() {
+            if *param_file == filename {
+                param_lines.push((property, value));
+                found = true;
+                break;
+            }
+        }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        unimplemented!();
-    } 
+        if !found {
+            let param_lines = vec![(property, value)];
+            self.params.push((filename, param_lines))
+        }
+    }
 }
 
 #[derive(Debug)]
-struct ParameterList {
-    params_map: HashMap<String, HashMap<String, String>>
+pub struct ParameterList {
+    // (filename, (property, value list))
+    param_lists: Vec<(String, Vec<(String, String)>)>
 }
 
-// TODO: implement display
 impl ParameterList {
     pub fn from_file(file_path: &Path) -> Result<ParameterList> {
         // Read the parameter file
@@ -39,8 +52,49 @@ impl ParameterList {
         let parameter_list: TomlValue = toml_str.parse()?;
 
         // Read each parameter
-        dbg!(parameter_list);
+        let mut param_lists = Vec::new();
+        if let TomlValue::Table(files) = parameter_list {
+            for (filename, toml_table) in files {
+                if let TomlValue::Table(map) = toml_table {
+                    let params = map.into_iter()
+                        .map(|(k, v)| (k, v.as_str().unwrap().to_owned()))
+                        .collect();
+                    param_lists.push((filename.clone(), params));
+                }
+            }
+        }
 
-        unimplemented!();
+        Ok(ParameterList {
+            param_lists
+        })
+    }
+
+    pub fn to_vec(&self) -> Vec<Parameter> {
+        let mut result = Vec::new();
+        self.iterate_parameters(0, 0, Parameter::empty(), &mut result);
+        result
+    }
+
+    fn iterate_parameters<'a>(&'a self, file_id: usize, line_id: usize,
+            current: Parameter<'a>, results: &mut Vec<Parameter<'a>>) {
+        // Check if the id exceeds
+        if file_id < self.param_lists.len() {
+            let (filename, param_lines) = &self.param_lists[file_id];
+
+            if line_id < param_lines.len() {
+                // Read a line and split it
+                let (prop, value_list) = &param_lines[line_id];
+                for value in value_list.split(" ") {
+                    let mut new = current.clone();
+                    new.add_param(filename.as_str(), prop.as_str(), value);
+                    self.iterate_parameters(file_id, line_id + 1, new, results);
+                }
+            } else {
+                // To next file
+                self.iterate_parameters(file_id + 1, 0, current, results);
+            }
+        } else {
+            results.push(current);
+        }
     }
 }

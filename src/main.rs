@@ -56,8 +56,10 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
     if let Some(matches) = matches.subcommand_matches("init-env") {
         init_env::execute(&config, matches)?;
     } else if let Some(matches) = matches.subcommand_matches("load") {
-        let map = properties::PropertiesFileMap::from_dir(&std::path::Path::new("properties"))?;
-        dbg!(map);
+        // let map = properties::PropertiesFileMap::from_dir(&std::path::Path::new("properties"))?;
+        // dbg!(map);
+        let list = parameters::ParameterList::from_file(std::path::Path::new("parameters/test.toml"))?;
+        println!("size = {}", list.to_vec().len());
         // load::execute(&config, matches)?;
     }
 

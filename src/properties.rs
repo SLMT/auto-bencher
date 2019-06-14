@@ -11,7 +11,7 @@ use crate::error::Result;
 #[derive(Debug)]
 struct PropertiesFile {
     id: String,
-    filename: String,
+    filename: String, // without ".properties"
     properties: HashMap<String, String>
 }
 
@@ -19,7 +19,7 @@ impl PropertiesFile {
     pub fn from_file(id: &str, path: &Path) -> Result<PropertiesFile> {
         let file = File::open(path)?;
         let properties = java_properties::read(BufReader::new(file))?;
-        let filename = path.file_name().unwrap().to_str().unwrap().to_owned();
+        let filename = path.file_stem().unwrap().to_str().unwrap().to_owned();
 
         Ok(PropertiesFile {
             id: id.to_owned(),

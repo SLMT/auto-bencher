@@ -1,3 +1,6 @@
 
-[vanillabench.properties]
+[vanilladb]
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "102400"
+
+[vanillabench]
 "org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "1"
