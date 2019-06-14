@@ -1,11 +1,9 @@
 
-use std::process::Command;
-
 use clap::{ArgMatches, App, SubCommand};
 use log::{info, trace};
 use colored::*;
 
-use crate::error::BenchError;
+use crate::error::{Result, BenchError};
 use crate::config::Config;
 use crate::command;
 
@@ -14,13 +12,12 @@ pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
                 .about("initializes the environment of all machines")
 }
 
-pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
+pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     println!("Starts initializing the environment");
 
     // Check local files
     if !check_local_jdk(config)? {
-        return Err(BenchError::Throw(
-            format!("cannot find the JDK at {}", config.path.local_jdk_path)));
+        panic!("cannot find the JDK at {}", config.path.local_jdk_path);
     }
 
     // For all the nodes
@@ -45,11 +42,11 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
     Ok(())
 }
 
-fn check_working_dir(config: &Config, ip: &str) -> Result<bool, BenchError> {
+fn check_working_dir(config: &Config, ip: &str) -> Result<bool> {
     let cmd = format!("ls -l {}", config.path.remote_work_dir);
 
     match command::ssh(&config.system.user_name, ip, &cmd) {
-        Err(BenchError::CommandFails(code)) if code == 2 => {
+        Err(BenchError::CommandFailedOnRemote(_, _, code)) if code == 2 => {
             Ok(false)
         },
         Err(e) => {
@@ -62,7 +59,7 @@ fn check_working_dir(config: &Config, ip: &str) -> Result<bool, BenchError> {
     }
 }
 
-fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
+fn create_working_dir(config: &Config, ip: &str) -> Result<()> {
     info!("creating a working directory on {}", ip);
 
     let cmd = format!("mkdir -p {}", config.path.remote_work_dir);
@@ -70,14 +67,14 @@ fn create_working_dir(config: &Config, ip: &str) -> Result<(), BenchError> {
         .map(|out| trace!("mkdir: {}", out))
 }
 
-fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
+fn check_java_runtime(config: &Config, ip: &str) -> Result<bool> {
     info!("checking java runtime on {}", ip);
 
     let cmd = format!("{}/{}/bin/java -version", config.path.remote_work_dir, config.path.jdk_dir);
 
     // Check if the java is installed
     match command::ssh(&config.system.user_name, ip, &cmd) {
-        Err(BenchError::NoSuchCommand) => {
+        Err(BenchError::NoSuchCommand(_)) => {
             Ok(false)
         },
         Err(e) => {
@@ -90,18 +87,18 @@ fn check_java_runtime(config: &Config, ip: &str) -> Result<bool, BenchError> {
     }
 }
 
-fn check_local_jdk(config: &Config) -> Result<bool, BenchError> {
+fn check_local_jdk(config: &Config) -> Result<bool> {
     info!("checking local jdk: {}", config.path.local_jdk_path);
 
     match command::ls(&config.path.local_jdk_path) {
         Ok(_) => Ok(true),
-        Err(BenchError::FileNotFound) => Ok(false),
+        Err(BenchError::FileNotFound(_)) => Ok(false),
         Err(e) => Err(e)
     }
 }
 
 
-fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
+fn send_jdk(config: &Config, ip: &str) -> Result<()> {
     info!("sending JDK to {}", ip);
 
     command::scp(false, &config.system.user_name, ip, 
@@ -109,7 +106,7 @@ fn send_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
     Ok(())
 }
 
-fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
+fn unpack_jdk(config: &Config, ip: &str) -> Result<()> {
     info!("unpacking {} on {}", config.path.jdk_package, ip);
     
     let cmd = format!("tar -C {} -zxf {}/{}", config.path.remote_work_dir, 
@@ -118,7 +115,7 @@ fn unpack_jdk(config: &Config, ip: &str) -> Result<(), BenchError> {
     Ok(())
 }
 
-fn remove_jdk_package(config: &Config, ip: &str) -> Result<(), BenchError> {
+fn remove_jdk_package(config: &Config, ip: &str) -> Result<()> {
     info!("removing {} on {}", config.path.jdk_package, ip);
     
     let cmd = format!("rm {}/{}", config.path.remote_work_dir, 

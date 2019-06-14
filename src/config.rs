@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use crate::error::BenchError;
+use crate::error::{Result, BenchError};
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -37,15 +37,12 @@ pub struct Machines {
 }
 
 impl Config {
-    pub fn from_file(path: &str) -> Result<Config, BenchError> {
+    pub fn from_file(path: &str) -> Result<Config> {
         // Read the file
-        let mut config_file = File::open(&path)
-            .map_err(|e| BenchError::throw("cannot open config file", e))?;
+        let mut config_file = File::open(&path)?;
         let mut config_str = String::new();
-        config_file.read_to_string(&mut config_str)
-            .map_err(|e| BenchError::throw("cannot read config file", e))?;
-        let mut config: Config = toml::from_str(&config_str)
-            .map_err(|e| BenchError::throw("cannot parse config file", e))?;
+        config_file.read_to_string(&mut config_str)?;
+        let mut config: Config = toml::from_str(&config_str)?;
 
         // All ips
         config.generate_all_ips();
@@ -57,7 +54,8 @@ impl Config {
                 config.path.jdk_package = String::from(f.to_str().unwrap());
             },
             None => {
-                return Err(BenchError::message("cannot recognize JDK's package"));
+                return Err(BenchError::Message(
+                    "cannot get the file name of the JDK".to_owned()))
             }
         }
 

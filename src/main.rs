@@ -4,14 +4,19 @@ mod config;
 mod command;
 mod init_env;
 mod load;
+mod parameters;
+mod properties;
 
 use clap::{Arg, ArgMatches, App};
 use colored::*;
+use log::error;
 
 use error::BenchError;
 use config::Config;
 
 fn main() {
+    // Setup the logger
+    set_logger_level();
     pretty_env_logger::init();
 
     let matches = App::new("Auto Bencher")
@@ -30,10 +35,15 @@ fn main() {
     
     match execute(matches) {
         Ok(_) => println!("Auto Bencher finishes."),
-        Err(BenchError::Throw(s)) => 
-            eprintln!("Auto Bencher exits with an {}:\n{}", "error".red(), s),
-        Err(e) => eprintln!("Auto Bencher exits with an {}:\n{:?}",
-                "error".red(), e),
+        Err(e) => error!("Auto Bencher exits with an {}:\n{}",
+                "error".red(), e)
+    }
+}
+
+fn set_logger_level() {
+    match std::env::var("RUST_LOG") {
+        Ok(_) => {},
+        Err(_) => std::env::set_var("RUST_LOG", "INFO"),
     }
 }
 

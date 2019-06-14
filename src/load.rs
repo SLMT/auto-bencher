@@ -2,7 +2,7 @@
 use colored::*;
 use clap::{ArgMatches, Arg, App, SubCommand};
 
-use crate::error::BenchError;
+use crate::error::{Result, BenchError};
 use crate::config::Config;
 
 pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
@@ -18,11 +18,10 @@ pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
                 .about("loads the testbed of the specified benchmark for the given number of machines")
 }
 
-pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
+pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     let bench_type = args.value_of("BENCH TYPE").unwrap();
     let number_of_machine = args.value_of("NUMBER OF MACHINES").unwrap();
-    let number_of_machine: usize = number_of_machine.parse()
-            .map_err(|e| BenchError::throw("parsing # of machines fails", e))?;
+    let number_of_machine: usize = number_of_machine.parse()?;
 
     // Check number of machines
     if number_of_machine > config.machines.servers.len() {
@@ -32,7 +31,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<(), BenchError> {
         } else {
             format!("There are only {} servers", avail)
         };
-        return Err(BenchError::message(&err_msg));
+        return Err(BenchError::Message(err_msg));
     }
     
     println!("Start loading {} benchmarks on {} servers.",

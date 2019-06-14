@@ -3,88 +3,60 @@ use std::process::Command;
 
 use log::debug;
 
-use crate::error::BenchError;
+use crate::error::{Result, BenchError};
 
-/// Returns: shown messages
-pub fn ssh(user_name: &str, ip: &str, cmd: &str) -> Result<String, BenchError> {
-    let result = Command::new("ssh")
-            .arg(format!("{}@{}", user_name, ip))
-            .arg(cmd)
-            .output()
-            .map_err(|e| BenchError::throw("execute command fails", e))?;
-
-    debug!("executing: ssh {}@{} '{}'", user_name, ip, cmd);
-    
-    match result.status.code() {
-        Some(127) => {
-            return Err(BenchError::NoSuchCommand);
+fn output_into_string(command: Command) -> Result<String> {
+    let cmd_str = format!("{:?}", command);
+    debug!("executing: {}", cmd_str);
+    let output = command.output()?;
+    match output.status.code() {
+        Some(0) => {
+            Ok(String::from_utf8(output.stdout)?)
         },
-        Some(0) => { },
+        Some(127) => {
+            Err(BenchError::NoSuchCommand(cmd_str))
+        },
         Some(code) => {
-            return Err(BenchError::CommandFails(code));
+            Err(BenchError::CommandFailed(cmd_str, code))
         },
         None => {
-            return Err(BenchError::message("the command terminates by a signal"));
-        }
+            Err(BenchError::CommandKilledBySingal(cmd_str))
+        } 
     }
-
-    let output = String::from_utf8(result.stdout)
-            .map_err(|e| BenchError::throw("parsing command output fails", e))?;
-
-    Ok(output)
 }
 
-pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_path: &str) -> Result<String, BenchError> {
+/// Returns: shown messages
+pub fn ssh(user_name: &str, ip: &str, remote_cmd: &str) -> Result<String> {
+    let mut command = Command::new("ssh");
+    command.arg(format!("{}@{}", user_name, ip)).arg(remote_cmd);
+
+    output_into_string(command).map_err(|e| e.as_remote_if_possible(ip))
+}
+
+pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_path: &str) -> Result<String> {
     let mut command = Command::new("scp");
 
     if is_dir {
         command.arg("-r");
-        debug!("executing: scp -r {} {}@{}:{}", local_path, user_name, ip, remote_path);
-    } else {
-        debug!("executing: scp {} {}@{}:{}", local_path, user_name, ip, remote_path);
     }
     
     command.arg(local_path);
     command.arg(format!("{}@{}:{}", user_name, ip, remote_path));
 
-    let output = command.output().map_err(|e| BenchError::throw("execute command fails", e))?;
-
-    match output.status.code() {
-        Some(0) => {
-            Ok(String::from_utf8(output.stdout)
-                    .map_err(|e| BenchError::throw("parsing command output fails", e))?)
-        },
-        Some(2) => {
-            Err(BenchError::FileNotFound)
-        },
-        Some(code) => {
-            Err(BenchError::CommandFails(code))
-        },
-        None => {
-            Err(BenchError::message("the command terminates by a signal"))
-        } 
+    match output_into_string(command).map_err(|e| e.as_remote_if_possible(ip)) {
+        Err(BenchError::CommandFailedOnRemote(_, _, 2)) =>
+            Err(BenchError::FileNotFound(local_path.to_owned())),
+        other => other
     }
 }
 
-pub fn ls(path: &str) -> Result<String, BenchError> {
-    let output = Command::new("ls").arg(path)
-            .output().map_err(|e| BenchError::throw("executes ls fails", e))?;
+pub fn ls(path: &str) -> Result<String> {
+    let mut command = Command::new("ls");
+    command.arg(path);
 
-    debug!("executing: ls {}", path);
-    
-    match output.status.code() {
-        Some(0) => {
-            Ok(String::from_utf8(output.stdout)
-                    .map_err(|e| BenchError::throw("parsing command output fails", e))?)
-        },
-        Some(2) => {
-            Err(BenchError::FileNotFound)
-        },
-        Some(code) => {
-            Err(BenchError::CommandFails(code))
-        },
-        None => {
-            Err(BenchError::message("the command terminates by a signal"))
-        } 
+    match output_into_string(command) {
+        Err(BenchError::CommandFailed(_, 2)) =>
+            Err(BenchError::FileNotFound(path.to_owned())),
+        other => other
     }
 }
