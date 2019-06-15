@@ -5,10 +5,10 @@ pub type Result<T> = std::result::Result<T, BenchError>;
 
 #[derive(Debug)]
 pub enum BenchError {
-    // (command, return code)
-    CommandFailed(String, i32),
-    // (ip, command, return code)
-    CommandFailedOnRemote(String, String, i32),
+    // (command, return code, stderr)
+    CommandFailed(String, i32, String),
+    // (ip, command, return code, stderr)
+    CommandFailedOnRemote(String, String, i32, String),
     // (command)
     NoSuchCommand(String),
     // (ip, command)
@@ -71,8 +71,9 @@ impl BenchError {
         match self {
             BenchError::NoSuchCommand(cmd) =>
                 BenchError::NoSuchCommandOnRemote(ip.to_owned(), cmd),
-            BenchError::CommandFailed(cmd, code) =>
-                BenchError::CommandFailedOnRemote(ip.to_owned(), cmd, code),
+            BenchError::CommandFailed(cmd, code, stderr) =>
+                BenchError::CommandFailedOnRemote(ip.to_owned(), cmd,
+                    code, stderr),
             other => other
         }
     }
@@ -80,7 +81,15 @@ impl BenchError {
 
 impl std::fmt::Display for BenchError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            BenchError::CommandFailed(cmd, code, stderr) => write!(f,
+                "command '{}' fails with return code {}.\nError message: {}",
+                cmd, code, stderr),
+            BenchError::FileNotFound(path) => write!(f,
+                "file not found: '{}'", path),
+            BenchError::Message(s) => write!(f, "{}", s),
+            e => write!(f, "{:?}", e)
+        }
     }
 }
 

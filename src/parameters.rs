@@ -4,6 +4,7 @@ use std::path::Path;
 use toml::Value as TomlValue;
 
 use crate::error::Result;
+use crate::properties::PropertiesFileMap;
 
 #[derive(Debug, Clone)]
 pub struct Parameter<'a> {
@@ -35,6 +36,32 @@ impl<'a> Parameter<'a> {
         if !found {
             let param_lines = vec![(property, value)];
             self.params.push((filename, param_lines))
+        }
+    }
+
+    pub fn get_basic_param(&self, key: &str) -> Option<&str> {
+        for (param_file, param_lines) in &self.params {
+            if *param_file == "basic" {
+                for (prop, value) in param_lines {
+                    if *prop == key {
+                        return Some(value)
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn override_properties(&self, files: &mut PropertiesFileMap) {
+        for (param_file, param_lines) in &self.params {
+            if *param_file == "basic" {
+                continue;
+            }
+
+            for (prop, value) in param_lines {
+                files.set(param_file, prop, value);
+            }
         }
     }
 }
@@ -75,12 +102,14 @@ impl ParameterList {
         result
     }
 
+    // Find all combinations of parameters. Implemented by recursion
     fn iterate_parameters<'a>(&'a self, file_id: usize, line_id: usize,
             current: Parameter<'a>, results: &mut Vec<Parameter<'a>>) {
-        // Check if the id exceeds
+        // Check if the file id exceeds
         if file_id < self.param_lists.len() {
             let (filename, param_lines) = &self.param_lists[file_id];
 
+            // Check if the line id exceeds
             if line_id < param_lines.len() {
                 // Read a line and split it
                 let (prop, value_list) = &param_lines[line_id];
@@ -94,6 +123,7 @@ impl ParameterList {
                 self.iterate_parameters(file_id + 1, 0, current, results);
             }
         } else {
+            // Reach the bottom, save the result
             results.push(current);
         }
     }

@@ -46,7 +46,7 @@ fn check_working_dir(config: &Config, ip: &str) -> Result<bool> {
     let cmd = format!("ls -l {}", config.path.remote_work_dir);
 
     match command::ssh(&config.system.user_name, ip, &cmd) {
-        Err(BenchError::CommandFailedOnRemote(_, _, code)) if code == 2 => {
+        Err(BenchError::CommandFailedOnRemote(_, _, code, _)) if code == 2 => {
             Ok(false)
         },
         Err(e) => {

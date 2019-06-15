@@ -1,4 +1,6 @@
 /target
 /package
+/benchmarker
+/jars
 **/*.rs.bk
 sync.sh

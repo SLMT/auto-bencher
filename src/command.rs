@@ -17,7 +17,8 @@ fn output_into_string(mut command: Command) -> Result<String> {
             Err(BenchError::NoSuchCommand(cmd_str))
         },
         Some(code) => {
-            Err(BenchError::CommandFailed(cmd_str, code))
+            let message = String::from_utf8(output.stderr)?;
+            Err(BenchError::CommandFailed(cmd_str, code, message))
         },
         None => {
             Err(BenchError::CommandKilledBySingal(cmd_str))
@@ -44,8 +45,25 @@ pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_pat
     command.arg(format!("{}@{}:{}", user_name, ip, remote_path));
 
     match output_into_string(command).map_err(|e| e.as_remote_if_possible(ip)) {
-        Err(BenchError::CommandFailedOnRemote(_, _, 2)) =>
+        Err(BenchError::CommandFailedOnRemote(_, _, 2, _)) =>
             Err(BenchError::FileNotFound(local_path.to_owned())),
+        other => other
+    }
+}
+
+pub fn cp(is_dir: bool, source: &str, dest: &str) -> Result<String> {
+    let mut command = Command::new("cp");
+
+    if is_dir {
+        command.arg("-r");
+    }
+    
+    command.arg(source);
+    command.arg(dest);
+
+    match output_into_string(command) {
+        Err(BenchError::CommandFailed(_, 2, _)) =>
+            Err(BenchError::FileNotFound(source.to_owned())),
         other => other
     }
 }
@@ -55,7 +73,10 @@ pub fn ls(path: &str) -> Result<String> {
     command.arg(path);
 
     match output_into_string(command) {
-        Err(BenchError::CommandFailed(_, 2)) =>
+        Err(BenchError::CommandFailed(_, 2, _)) =>
+            Err(BenchError::FileNotFound(path.to_owned())),
+        Err(BenchError::CommandFailed(_, _, ref msg))
+                if msg.contains("No such file or directory") =>
             Err(BenchError::FileNotFound(path.to_owned())),
         other => other
     }

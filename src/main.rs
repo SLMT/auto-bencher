@@ -9,7 +9,7 @@ mod properties;
 
 use clap::{Arg, ArgMatches, App};
 use colored::*;
-use log::error;
+use log::{info, error};
 
 use error::BenchError;
 use config::Config;
@@ -34,9 +34,8 @@ fn main() {
                        .get_matches();
     
     match execute(matches) {
-        Ok(_) => println!("Auto Bencher finishes."),
-        Err(e) => error!("Auto Bencher exits with an {}:\n{}",
-                "error".red(), e)
+        Ok(_) => info!("Auto Bencher finishes."),
+        Err(e) => error!("Auto Bencher exits with an error: {}", e)
     }
 }
 
@@ -56,11 +55,9 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
     if let Some(matches) = matches.subcommand_matches("init-env") {
         init_env::execute(&config, matches)?;
     } else if let Some(matches) = matches.subcommand_matches("load") {
-        // let map = properties::PropertiesFileMap::from_dir(&std::path::Path::new("properties"))?;
-        // dbg!(map);
-        let list = parameters::ParameterList::from_file(std::path::Path::new("parameters/test.toml"))?;
-        println!("size = {}", list.to_vec().len());
-        // load::execute(&config, matches)?;
+        // let list = parameters::ParameterList::from_file(std::path::Path::new("parameters/test.toml"))?;
+        // println!("size = {}", list.to_vec().len());
+        load::execute(&config, matches)?;
     }
 
     Ok(())
