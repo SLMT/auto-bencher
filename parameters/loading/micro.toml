@@ -4,6 +4,7 @@
 
 [vanilladb]
 "org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "102400"
+"org.vanilladb.core.storage.file.io.IoAllocator.USE_O_DIRECT" = "true"
 
 [vanillabench]
 "org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "1"

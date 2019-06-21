@@ -1,6 +1,4 @@
 
-use std::path::PathBuf;
-
 use log::*;
 
 use crate::config::Config;
@@ -85,7 +83,12 @@ impl Client {
         Ok(())
     }
 
-    pub fn check_for_finished(&self) -> Result<bool> {
+    pub fn check_for_finished(&self, action: Action) -> Result<bool> {
+        let keyword = match action {
+            Action::Loading => "loading procedure finished.",
+            Action::Benchmarking => "benchmark process finished.",
+        };
+
         if let Ok(output) = self.grep_log("Exception") {
             return Err(BenchError::Message(
                 format!("Server error: {}", output)));
@@ -96,7 +99,7 @@ impl Client {
                 format!("Server error: {}", output)));
         }
 
-        match self.grep_log("finished") {
+        match self.grep_log(keyword) {
             Ok(_) => Ok(true),
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
                 Ok(false),
@@ -112,7 +115,7 @@ impl Client {
         let remote_result_path = format!("{}/*.csv",
             self.result_path());
         command::scp_from(
-            true,
+            false,
             &self.config.system.user_name,
             &self.address,
             &remote_result_path,
@@ -122,13 +125,13 @@ impl Client {
     }
 
     fn jar_path(&self) -> String {
-        format!("{}/benchmarker/server.jar",
+        format!("{}/benchmarker/client.jar",
             &self.config.system.remote_work_dir
         )
     }
 
     fn log_path(&self) -> String {
-        format!("{}/server.log",
+        format!("{}/client.log",
             &self.config.system.remote_work_dir
         )
     }
@@ -140,7 +143,7 @@ impl Client {
     }
 
     fn grep_log(&self, keyword: &str) -> Result<String> {
-        let cmd = format!("grep {} {}",
+        let cmd = format!("grep '{}' {}",
             keyword,
             self.log_path()
         );

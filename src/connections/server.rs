@@ -51,6 +51,23 @@ impl Server {
         Ok(())
     }
 
+    pub fn delete_db_dir(&self) -> Result<()> {
+        let cmd = format!("rm -rf {}",
+            self.db_path());
+        let result = command::ssh(
+            &self.config.system.user_name,
+            &self.address,
+            &cmd
+        );
+        match result {
+            Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
+                    debug!("No backup database is found on '{}'", self.address),
+            Err(e) => return Err(e),
+            _ => {}
+        }
+        Ok(())
+    }
+
     pub fn delete_backup_db_dir(&self) -> Result<()> {
         debug!("Deleting backup dir on the server...");
         let cmd = format!("rm -rf {}",
@@ -79,20 +96,13 @@ impl Server {
             &self.config.system.user_name,
             &self.address,
             &cmd
-        );
+        )?;
         Ok(())
     }
 
     pub fn reset_db_dir(&self) -> Result<()> {
         debug!("Resetting the db of the server...");
-        // delete the old db dir
-        let cmd = format!("rm -rf {}",
-            self.db_path());
-        command::ssh(
-            &self.config.system.user_name,
-            &self.address,
-            &cmd
-        )?;
+        self.delete_db_dir()?;
         // copy the backup for replacement
         let cmd = format!("cp -r {} {}",
             self.backup_db_path(),

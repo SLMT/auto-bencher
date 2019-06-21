@@ -5,6 +5,7 @@ mod client;
 pub use server::Server;
 pub use client::Client;
 
+#[derive(Clone, Copy)]
 pub enum Action {
     Loading,
     Benchmarking
