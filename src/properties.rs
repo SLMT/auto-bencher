@@ -51,7 +51,7 @@ struct Setting {
 
 #[derive(Debug)]
 pub struct PropertiesFileMap {
-    // id => PropertiesFile
+    // filename => PropertiesFile
     files: HashMap<String, PropertiesFile>
 }
 
@@ -68,7 +68,7 @@ impl PropertiesFileMap {
             let path = input_dir.join(setting.filename);
             let file = PropertiesFile::from_file(
                     &setting.id, &path)?;
-            files.insert(setting.id.clone(), file);
+            files.insert(file.filename.clone(), file);
         }
 
         Ok(PropertiesFileMap {
@@ -88,5 +88,21 @@ impl PropertiesFileMap {
             file.output_to_file(dir_path)?;
         }
         Ok(())
+    }
+
+    pub fn get_vm_args(&self, prop_dir_path: &Path) -> Result<String> {
+        let mut vm_args = String::new();
+
+        for (_, file) in &self.files {
+            vm_args.push_str("-D");
+            vm_args.push_str(&file.id);
+            vm_args.push_str("=");
+            let file_path = prop_dir_path.join(&file.filename);
+            vm_args.push_str(file_path.to_str().unwrap());
+            vm_args.push_str(".properties ");
+        }
+        vm_args.remove(vm_args.len() - 1); // remove the last " "
+
+        Ok(vm_args)
     }
 }

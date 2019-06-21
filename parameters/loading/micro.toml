@@ -7,3 +7,4 @@
 
 [vanillabench]
 "org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "1"
+"org.vanilladb.bench.benchmarks.micro.MicrobenchConstants.NUM_ITEMS" = "100000"

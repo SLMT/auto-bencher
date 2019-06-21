@@ -2,14 +2,13 @@
 mod error;
 mod config;
 mod command;
-mod init_env;
-mod load;
+mod subcommands;
 mod parameters;
 mod properties;
+mod connections;
 
 use clap::{Arg, ArgMatches, App};
-use colored::*;
-use log::{info, error};
+use log::*;
 
 use error::BenchError;
 use config::Config;
@@ -29,8 +28,8 @@ fn main() {
                             .value_name("FILE")
                             .help("Sets the path to a config file")
                             .takes_value(true))
-                       .subcommand(init_env::get_sub_command())
-                       .subcommand(load::get_sub_command())
+                       .subcommand(subcommands::init_env::get_sub_command())
+                       .subcommand(subcommands::load::get_sub_command())
                        .get_matches();
     
     match execute(matches) {
@@ -42,7 +41,7 @@ fn main() {
 fn set_logger_level() {
     match std::env::var("RUST_LOG") {
         Ok(_) => {},
-        Err(_) => std::env::set_var("RUST_LOG", "INFO"),
+        Err(_) => std::env::set_var("RUST_LOG", "DEBUG"),
     }
 }
 
@@ -53,11 +52,9 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
 
     // Choose action according to the sub command
     if let Some(matches) = matches.subcommand_matches("init-env") {
-        init_env::execute(&config, matches)?;
+        subcommands::init_env::execute(&config, matches)?;
     } else if let Some(matches) = matches.subcommand_matches("load") {
-        // let list = parameters::ParameterList::from_file(std::path::Path::new("parameters/test.toml"))?;
-        // println!("size = {}", list.to_vec().len());
-        load::execute(&config, matches)?;
+        subcommands::load::execute(&config, matches)?;
     }
 
     Ok(())

@@ -13,21 +13,21 @@ pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
 }
 
 pub fn execute(config: &Config, _: &ArgMatches) -> Result<()> {
-    println!("Starts initializing the environment");
+    info!("Starts initializing the environment");
 
     // Check local files
     if !check_local_jdk(config)? {
-        panic!("cannot find the JDK at {}", config.path.local_jdk_path);
+        return Err(BenchError::Message(
+            format!("cannot find the JDK at {}", config.jdk.package_path)
+        ));
     }
 
     // For all the nodes
     for ip in &config.machines.all {
-        print!("Node {} ...", ip);
+        info!("Checking node '{}' ...", ip);
 
-        // Check the working directory
-        if !check_working_dir(&config, ip)? {
-            create_working_dir(&config, ip)?
-        }
+        // Create the working directory
+        create_working_dir(&config, ip)?;
 
         // Check Java Runtime
         if !check_java_runtime(&config, ip)? {
@@ -36,14 +36,14 @@ pub fn execute(config: &Config, _: &ArgMatches) -> Result<()> {
             remove_jdk_package(config, ip)?;
         }
 
-        println!("{}", "checked".green());
+        info!("Node '{}' {}", ip, "checked".green());
     }
     
     Ok(())
 }
 
 fn check_working_dir(config: &Config, ip: &str) -> Result<bool> {
-    let cmd = format!("ls -l {}", config.path.remote_work_dir);
+    let cmd = format!("ls -l {}", config.system.remote_work_dir);
 
     match command::ssh(&config.system.user_name, ip, &cmd) {
         Err(BenchError::CommandFailedOnRemote(_, _, code, _)) if code == 2 => {
@@ -60,17 +60,22 @@ fn check_working_dir(config: &Config, ip: &str) -> Result<bool> {
 }
 
 fn create_working_dir(config: &Config, ip: &str) -> Result<()> {
-    info!("creating a working directory on {}", ip);
+    info!("Creating a working directory on {}", ip);
 
-    let cmd = format!("mkdir -p {}", config.path.remote_work_dir);
-    command::ssh(&config.system.user_name, ip, &cmd)
-        .map(|out| trace!("mkdir: {}", out))
+    for dir in ["databases", "results"].iter() {
+        let cmd = format!("mkdir -p {}/{}",
+            config.system.remote_work_dir, dir);
+        command::ssh(&config.system.user_name, ip, &cmd)
+            .map(|out| trace!("mkdir: {}", out))?;
+    }
+    Ok(())
 }
 
 fn check_java_runtime(config: &Config, ip: &str) -> Result<bool> {
-    info!("checking java runtime on {}", ip);
+    info!("Checking java runtime on {}", ip);
 
-    let cmd = format!("{}/{}/bin/java -version", config.path.remote_work_dir, config.path.jdk_dir);
+    let cmd = format!("{}/{}/bin/java -version",
+        config.system.remote_work_dir, config.jdk.dir_name);
 
     // Check if the java is installed
     match command::ssh(&config.system.user_name, ip, &cmd) {
@@ -88,9 +93,9 @@ fn check_java_runtime(config: &Config, ip: &str) -> Result<bool> {
 }
 
 fn check_local_jdk(config: &Config) -> Result<bool> {
-    info!("checking local jdk: {}", config.path.local_jdk_path);
+    info!("Checking local jdk: {}", config.jdk.package_path);
 
-    match command::ls(&config.path.local_jdk_path) {
+    match command::ls(&config.jdk.package_path) {
         Ok(_) => Ok(true),
         Err(BenchError::FileNotFound(_)) => Ok(false),
         Err(e) => Err(e)
@@ -99,27 +104,27 @@ fn check_local_jdk(config: &Config) -> Result<bool> {
 
 
 fn send_jdk(config: &Config, ip: &str) -> Result<()> {
-    info!("sending JDK to {}", ip);
+    info!("Sending JDK to {}", ip);
 
-    command::scp(false, &config.system.user_name, ip, 
-            &config.path.local_jdk_path, &config.path.remote_work_dir)?;
+    command::scp_to(false, &config.system.user_name, ip, 
+            &config.jdk.package_path, &config.system.remote_work_dir)?;
     Ok(())
 }
 
 fn unpack_jdk(config: &Config, ip: &str) -> Result<()> {
-    info!("unpacking {} on {}", config.path.jdk_package, ip);
+    info!("Unpacking {} on {}", config.jdk.package_filename, ip);
     
-    let cmd = format!("tar -C {} -zxf {}/{}", config.path.remote_work_dir, 
-            config.path.remote_work_dir, config.path.jdk_package);
+    let cmd = format!("tar -C {} -zxf {}/{}", config.system.remote_work_dir, 
+            config.system.remote_work_dir, config.jdk.package_filename);
     command::ssh(&config.system.user_name, ip, &cmd)?;
     Ok(())
 }
 
 fn remove_jdk_package(config: &Config, ip: &str) -> Result<()> {
-    info!("removing {} on {}", config.path.jdk_package, ip);
+    info!("Removing {} on {}", config.jdk.package_filename, ip);
     
-    let cmd = format!("rm {}/{}", config.path.remote_work_dir, 
-            config.path.jdk_package);
+    let cmd = format!("rm {}/{}", config.system.remote_work_dir, 
+            config.jdk.package_filename);
     command::ssh(&config.system.user_name, ip, &cmd)?;
     Ok(())
 }

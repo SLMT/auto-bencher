@@ -1,17 +1,14 @@
 
 [system]
 user_name = "admin0"
-
-[path]
 remote_work_dir = "auto-bencher-workspace"
-jdk_dir = "jdk1.8.0_211"
-local_jdk_path = "package/jdk-8u211-linux-x64.tar.gz"
+
+[jdk]
+use_custom_jdk = true # Reserved.
+dir_name = "jdk1.8.0_211"
+package_path = "package/jdk-8u211-linux-x64.tar.gz"
+jvm_args = "-Xmx4g -Xms4g"
 
 [machines]
-sequencers = []
-servers = [
-    "192.168.1.11"
-]
-clients = [
-    "192.168.1.12"
-]
+server = "192.168.1.11"
+client = "192.168.1.12"

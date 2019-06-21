@@ -1,13 +1,13 @@
 
 use std::process::Command;
 
-use log::debug;
+use log::*;
 
 use crate::error::{Result, BenchError};
 
 fn output_into_string(mut command: Command) -> Result<String> {
     let cmd_str = format!("{:?}", command);
-    debug!("executing: {}", cmd_str);
+    trace!("executing: {}", cmd_str);
     let output = command.output()?;
     match output.status.code() {
         Some(0) => {
@@ -34,7 +34,7 @@ pub fn ssh(user_name: &str, ip: &str, remote_cmd: &str) -> Result<String> {
     output_into_string(command).map_err(|e| e.as_remote_if_possible(ip))
 }
 
-pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_path: &str) -> Result<String> {
+pub fn scp_to(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_path: &str) -> Result<String> {
     let mut command = Command::new("scp");
 
     if is_dir {
@@ -47,6 +47,24 @@ pub fn scp(is_dir: bool, user_name: &str, ip: &str, local_path: &str, remote_pat
     match output_into_string(command).map_err(|e| e.as_remote_if_possible(ip)) {
         Err(BenchError::CommandFailedOnRemote(_, _, 2, _)) =>
             Err(BenchError::FileNotFound(local_path.to_owned())),
+        other => other
+    }
+}
+
+pub fn scp_from(is_dir: bool, user_name: &str, ip: &str, remote_path: &str,
+        local_path: &str) -> Result<String> {
+    let mut command = Command::new("scp");
+
+    if is_dir {
+        command.arg("-r");
+    }
+    
+    command.arg(format!("{}@{}:{}", user_name, ip, remote_path));
+    command.arg(local_path);
+
+    match output_into_string(command).map_err(|e| e.as_remote_if_possible(ip)) {
+        Err(BenchError::CommandFailedOnRemote(_, _, 2, _)) =>
+            Err(BenchError::FileNotFound(remote_path.to_owned())),
         other => other
     }
 }

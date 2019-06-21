@@ -25,6 +25,7 @@ pub enum BenchError {
     ParseJsonError(serde_json::error::Error),
     ParesPropertiesError(java_properties::PropertiesError),
     IoError(std::io::Error),
+    // PoisonError(std::sync::PoisonError),
 
     // (message)
     Message(String)
@@ -63,6 +64,12 @@ impl From<java_properties::PropertiesError> for BenchError {
 impl From<std::io::Error> for BenchError {
     fn from(error: std::io::Error) -> Self {
         BenchError::IoError(error)
+    }
+}
+
+impl<T> From<std::sync::PoisonError<T>> for BenchError {
+    fn from(error: std::sync::PoisonError<T>) -> Self {
+        BenchError::Message(format!("{:?}", error))
     }
 }
 

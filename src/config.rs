@@ -1,39 +1,42 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::string::ToString;
 
 use serde::Deserialize;
 
 use crate::error::{Result, BenchError};
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Config {
     pub system: System,
-    pub path: Path,
+    pub jdk: Jdk,
     pub machines: Machines
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct System {
     pub user_name: String,
+    pub remote_work_dir: String
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Path {
-    pub remote_work_dir: String,
-    pub jdk_dir: String,
-    pub local_jdk_path: String,
+#[derive(Deserialize, Debug, Clone)]
+pub struct Jdk {
+    pub use_custom_jdk: bool,
+    pub dir_name: String,
+    pub package_path: String,
     #[serde(skip)]
-    pub jdk_package: String
+    pub package_filename: String,
+    #[serde(skip)]
+    pub remote_java_bin: String
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Machines {
     #[serde(skip)]
     pub all: Vec<String>,
-    pub sequencers: Vec<String>,
-    pub servers: Vec<String>,
-    pub clients: Vec<String>
+    pub server: String,
+    pub client: String
 }
 
 impl Config {
@@ -48,10 +51,10 @@ impl Config {
         config.generate_all_ips();
 
         // Get JDK package name
-        let path = PathBuf::from(&config.path.local_jdk_path);
+        let path = PathBuf::from(&config.jdk.package_path);
         match path.file_name() {
             Some(f) => {
-                config.path.jdk_package = String::from(f.to_str().unwrap());
+                config.jdk.package_filename = f.to_str().unwrap().to_owned();
             },
             None => {
                 return Err(BenchError::Message(
@@ -59,18 +62,18 @@ impl Config {
             }
         }
 
+        // Set the path to java
+        let mut path = PathBuf::from(&config.system.remote_work_dir);
+        path.push(&config.jdk.dir_name);
+        path.push("bin");
+        path.push("java");
+        config.jdk.remote_java_bin = path.display().to_string();
+
         Ok(config)
     }
 
     fn generate_all_ips(&mut self) {
-        for ip in &self.machines.sequencers {
-            self.machines.all.push(String::from(ip.as_str()));
-        }
-        for ip in &self.machines.servers {
-            self.machines.all.push(String::from(ip.as_str()));
-        }
-        for ip in &self.machines.clients {
-            self.machines.all.push(String::from(ip.as_str()));
-        }
+        self.machines.all.push(self.machines.server.clone());
+        self.machines.all.push(self.machines.client.clone());
     }
 }
