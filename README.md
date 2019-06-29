@@ -4,16 +4,20 @@
 
 - `auto-bencher init-env`
     - 初始化與檢察環境
-- `auto-bencher clean`
+- (not yet) `auto-bencher clean`
     - 清空環境，刪除所有此程式建立的檔案
-- `auto-bencher execute-cmd [CMD]`
+- (not yet) `auto-bencher execute-cmd [CMD]`
     - 執行給定指令 `CMD`
-- `auto-bencher load [bench type] [# of nodes]`
+- `auto-bencher load [db name]`
     - 為給定數量的機器跑載入資料
-- `auto-bencher check-ready [# of nodes]`
+- (not yet) `auto-bencher check-ready`
     - 檢查環境是否該有的東西都有，包括 benchmark 的資料都準備好了
-- `auto-bencher bench [parameter file]`
+- `auto-bencher bench [db name] [parameter file]`
     - 用給定的參數跑 benchmarks
+
+### Refactoring
+
+- Improve the error handling (stack trace ?)
 
 ### Bug To Fix
 
