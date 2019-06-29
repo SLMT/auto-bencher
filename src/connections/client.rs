@@ -65,7 +65,7 @@ impl Client {
     }
 
     pub fn start(&self, action: Action) -> Result<()> {
-        debug!("Starting the client...");
+        info!("Starting the client...");
         // [action]
         let prog_args = format!("{}", action.as_int());
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
@@ -80,6 +80,7 @@ impl Client {
             &self.address,
             &cmd
         )?;
+        info!("The client is running.");
         Ok(())
     }
 
@@ -122,6 +123,27 @@ impl Client {
             "results"
         )?;
         Ok(())
+    }
+
+    pub fn get_total_throughput(&self) -> Result<u32> {
+        let cmd = format!("grep 'TOTAL' {}/*",
+            self.result_path()
+        );
+        let output = command::ssh(
+            &self.config.system.user_name,
+            &self.address,
+            &cmd
+        )?;
+        // Output should be '...:TOTAL - committed: xxxx,...'
+        let start = output.find("committed")
+            .ok_or(BenchError::Message(
+                format!("cannot parse result file: {}", output)
+            ))? + 11;
+        let end = output[start ..].find(",")
+            .ok_or(BenchError::Message(
+                format!("cannot parse result file: {}", output)
+            ))? + start;
+        Ok(output[start..end].parse()?)
     }
 
     fn jar_path(&self) -> String {

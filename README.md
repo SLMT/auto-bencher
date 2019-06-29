@@ -15,6 +15,10 @@
 - `auto-bencher bench [parameter file]`
     - 用給定的參數跑 benchmarks
 
+### Bug To Fix
+
+- Delete java runtime zip on the machines
+
 ### 期望功能
 
 - 必須要檢查 server 跟 client 是否都正常啟動

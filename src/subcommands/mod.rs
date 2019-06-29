@@ -25,12 +25,12 @@ const CHECKING_INTERVAL: u64 = 1;
 
 enum ThreadResult {
     ServerSucceed,
-    ClientSucceed,
+    ClientSucceed(Option<u32>),
     Failed
 }
 
 fn run_server_and_client(config: &Config, parameter: &Parameter,
-        bench_type: &str, action: Action) -> Result<()> {
+        bench_type: &str, action: Action) -> Result<Option<u32>> {
     // Prepare the bench dir
     let vm_args = prepare_bench_dir(&config, parameter)?;
 
@@ -67,12 +67,14 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     threads.push(handle);
 
     // Check if there is any error
+    let mut throughput: Option<u32> = None;
     for _ in 0 .. threads.len() {
         match rx.recv().unwrap() {
-            ThreadResult::ClientSucceed => {
+            ThreadResult::ClientSucceed(th) => {
                 // Notify the servers to finish
                 let mut stop = stop_sign.write().unwrap();
                 *stop = true;
+                throughput = th;
             },
             ThreadResult::Failed => {
                 return Err(BenchError::Message(
@@ -88,7 +90,7 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         thread.join().unwrap();
     }
 
-    Ok(())
+    Ok(throughput)
 }
 
 fn create_server_connection(barrier: Arc<Barrier>, stop_sign: Arc<RwLock<bool>>,
@@ -165,7 +167,7 @@ fn create_client_connection(barrier: Arc<Barrier>,
                     ip, e);
                 ThreadResult::Failed
             },
-            _ => ThreadResult::ClientSucceed
+            Ok(th) => ThreadResult::ClientSucceed(th)
         };
         info!("The client finished.");
         result_ch.send(result).unwrap();
@@ -173,7 +175,7 @@ fn create_client_connection(barrier: Arc<Barrier>,
 }
 
 fn execute_client_thread(client: Client, barrier: Arc<Barrier>,
-        action: Action) -> Result<()> {
+        action: Action) -> Result<Option<u32>> {
     client.kill_existing_process()?;
     client.clean_previous_results()?;
     client.send_bench_dir()?;
@@ -188,10 +190,13 @@ fn execute_client_thread(client: Client, barrier: Arc<Barrier>,
     }
 
     if let Action::Benchmarking = action {
-        client.pull_csv()?;
+        // client.pull_csv()?;
+        let throughput = client.get_total_throughput()?;
+        info!("The total throughput is {}", throughput);
+        Ok(Some(throughput))
+    } else {
+        Ok(None)
     }
-
-    Ok(())
 }
 
 // Output: vm args for properties files
@@ -202,11 +207,11 @@ fn prepare_bench_dir(config: &Config, parameter: &Parameter) -> Result<String> {
     fs::create_dir_all(BENCH_DIR)?;
 
     // Copy the jar files to the benchmark dir
-    if let Some(dirname) = parameter.get_basic_param("jar.dir") {
+    if let Some(dirname) = parameter.get_basic_param("JAR_DIR") {
         copy_jars(dirname)?;
     } else {
         return Err(BenchError::Message(
-            "No \"jar.dir\" is provided in the parameter file".to_owned()
+            "No \"JAR_DIR\" is provided in the parameter file".to_owned()
         ))
     }
 

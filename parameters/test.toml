@@ -1,6 +1,6 @@
 
 [basic]
-"jar.dir" = "load"
+"JAR_DIR" = "load"
 
 [vanilladb]
 "org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1024 102400"

@@ -64,6 +64,26 @@ impl<'a> Parameter<'a> {
             }
         }
     }
+    
+    pub fn get_properties(&self) -> Vec<&'a str> {
+        let mut properties = Vec::new();
+        for (_, param_lines) in &self.params {
+            for (prop, _) in param_lines {
+                properties.push(*prop);
+            }
+        }
+        properties
+    }
+    
+    pub fn get_properties_values(&self) -> Vec<&'a str> {
+        let mut values = Vec::new();
+        for (_, param_lines) in &self.params {
+            for (_, value) in param_lines {
+                values.push(*value);
+            }
+        }
+        values
+    }
 }
 
 #[derive(Debug)]
