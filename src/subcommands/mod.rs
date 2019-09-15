@@ -207,13 +207,8 @@ fn prepare_bench_dir(config: &Config, parameter: &Parameter) -> Result<String> {
     fs::create_dir_all(BENCH_DIR)?;
 
     // Copy the jar files to the benchmark dir
-    if let Some(dirname) = parameter.get_basic_param("JAR_DIR") {
-        copy_jars(dirname)?;
-    } else {
-        return Err(BenchError::Message(
-            "No \"JAR_DIR\" is provided in the parameter file".to_owned()
-        ))
-    }
+    let dirname = parameter.get_autobencher_param("jar_dir")?;
+    copy_jars(dirname)?;
 
     // Read the default properties
     let mut map = PropertiesFileMap::from_dir(&Path::new("properties"))?;

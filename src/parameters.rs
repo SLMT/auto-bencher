@@ -3,7 +3,7 @@ use std::path::Path;
 
 use toml::Value as TomlValue;
 
-use crate::error::Result;
+use crate::error::{Result, BenchError};
 use crate::properties::PropertiesFileMap;
 
 #[derive(Debug, Clone)]
@@ -39,18 +39,22 @@ impl<'a> Parameter<'a> {
         }
     }
 
-    pub fn get_basic_param(&self, key: &str) -> Option<&str> {
+    pub fn get_autobencher_param(&self, key: &str) -> Result<&str> {
         for (param_file, param_lines) in &self.params {
-            if *param_file == "basic" {
+            if *param_file == "auto_bencher" {
                 for (prop, value) in param_lines {
                     if *prop == key {
-                        return Some(value)
+                        return Ok(value)
                     }
                 }
             }
         }
 
-        None
+        // The parameter for the auto-bencher must exist
+        Err(BenchError::Message(format!(
+            "Cannot find parameter \"{}\" for the auto-bencher",
+            key
+        )))
     }
 
     pub fn override_properties(&self, files: &mut PropertiesFileMap) {

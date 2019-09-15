@@ -1,6 +1,10 @@
 
-[basic]
-"JAR_DIR" = "load"
+[auto_bencher]
+jar_dir = "load"
+server_count = "3"
+server_client_ratio = "1"
+server_per_machine = "1"
+client_per_machine = "2"
 
 [vanilladb]
 "org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "512000"
