@@ -50,9 +50,13 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
             config, &param_list[job_id],
             &db_name, Action::Benchmarking
         ) {
-            Ok(th) => {
+            Ok(ths) => {
+                let mut total_throughput = 0;
+                for th in ths {
+                    total_throughput += th.unwrap();
+                }
                 info!("Job {} finished successfully.", job_id);
-                th.unwrap().to_string()
+                total_throughput.to_string()
             },
             Err(e) => {
                 info!("Job {} finished with an error: {}", job_id, e);

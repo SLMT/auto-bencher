@@ -5,42 +5,28 @@ use crate::config::Config;
 use crate::error::{Result, BenchError};
 use crate::command;
 use super::Action;
+use super::ConnectionInfo;
 
 pub struct Client {
     config: Config,
-    address: String,
+    connection_info: ConnectionInfo,
     vm_args: String,
 }
 
 impl Client {
-    pub fn new(config: Config, address: String, vm_args: String) -> Client {
+    pub fn new(config: Config, connection_info: ConnectionInfo, vm_args: String) -> Client {
         Client {
             config,
-            address,
+            connection_info,
             vm_args
         }
-    }
-
-    pub fn kill_existing_process(&self) -> Result<()> {
-        let result = command::ssh(
-            &self.config.system.user_name,
-            &self.address,
-            "pkill -f benchmarker"
-        );
-        match result {
-            Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    info!("No existing process is found on '{}'", self.address),
-            Err(e) => return Err(e),
-            _ => {}
-        }
-        Ok(())
     }
 
     pub fn send_bench_dir(&self) -> Result<()> {
         command::scp_to(
             true,
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             "benchmarker",
             &self.config.system.remote_work_dir
         )?;
@@ -52,12 +38,12 @@ impl Client {
             self.result_path());
         let result = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    info!("No previous results are found on '{}'", self.address),
+                    info!("No previous results are found on '{}'", self.connection_info.ip),
             Err(e) => return Err(e),
             _ => {}
         }
@@ -65,9 +51,10 @@ impl Client {
     }
 
     pub fn start(&self, action: Action) -> Result<()> {
-        info!("Starting the client...");
-        // [action]
-        let prog_args = format!("{}", action.as_int());
+        info!("Starting client {}...", self.id());
+        // [client id] [action]
+        let prog_args = format!("{} {}",
+            self.connection_info.id, action.as_int());
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
             self.config.jdk.remote_java_bin,
             self.vm_args,
@@ -77,10 +64,10 @@ impl Client {
         );
         command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
-        info!("The client is running.");
+        info!("Client {} is running.", self.id());
         Ok(())
     }
 
@@ -92,12 +79,12 @@ impl Client {
 
         if let Ok(output) = self.grep_log("Exception") {
             return Err(BenchError::Message(
-                format!("Server error: {}", output)));
+                format!("Client {} error: {}", self.id(), output)));
         }
 
         if let Ok(output) = self.grep_log("error") {
             return Err(BenchError::Message(
-                format!("Server error: {}", output)));
+                format!("Client {} error: {}", self.id(), output)));
         }
 
         match self.grep_log(keyword) {
@@ -118,7 +105,7 @@ impl Client {
         command::scp_from(
             false,
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &remote_result_path,
             "results"
         )?;
@@ -131,7 +118,7 @@ impl Client {
         );
         let output = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         // Output should be '...:TOTAL - committed: xxxx,...'
@@ -146,6 +133,14 @@ impl Client {
         Ok(output[start..end].parse()?)
     }
 
+    pub fn id(&self) -> usize {
+        self.connection_info.id
+    }
+
+    pub fn ip(&self) -> &str {
+        &self.connection_info.ip
+    }
+
     fn jar_path(&self) -> String {
         format!("{}/benchmarker/client.jar",
             &self.config.system.remote_work_dir
@@ -153,8 +148,9 @@ impl Client {
     }
 
     fn log_path(&self) -> String {
-        format!("{}/client.log",
-            &self.config.system.remote_work_dir
+        format!("{}/client-{}.log",
+            &self.config.system.remote_work_dir,
+            self.connection_info.id
         )
     }
 
@@ -171,7 +167,7 @@ impl Client {
         );
         let output = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         Ok(output)

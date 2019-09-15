@@ -4,47 +4,42 @@ use log::*;
 use crate::config::Config;
 use crate::error::{Result, BenchError};
 use crate::command;
+use super::ConnectionInfo;
 
 pub struct Server {
     config: Config,
-    address: String,
+    connection_info: ConnectionInfo,
     db_name: String,
-    vm_args: String
+    vm_args: String,
+    is_sequencer: bool
 }
 
 impl Server {
-    pub fn new(config: Config, address: String,
-        db_name: String, vm_args: String) -> Server {
+    pub fn new(config: Config, connection_info: ConnectionInfo,
+        db_name: String, vm_args: String,
+        is_sequencer: bool) -> Server {
+        
+        let db_name = if is_sequencer {
+            format!("{}-seq", db_name)
+        } else {
+            format!("{}-{}", db_name, connection_info.id)
+        };
+
         Server {
             config,
-            address,
+            connection_info,
             db_name,
-            vm_args
+            vm_args,
+            is_sequencer
         }
-    }
-
-    pub fn kill_existing_process(&self) -> Result<()> {
-        debug!("Kill existing processes on the server...");
-        let result = command::ssh(
-            &self.config.system.user_name,
-            &self.address,
-            "pkill -f benchmarker"
-        );
-        match result {
-            Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    info!("No existing process is found on '{}'", self.address),
-            Err(e) => return Err(e),
-            _ => {}
-        }
-        Ok(())
     }
 
     pub fn send_bench_dir(&self) -> Result<()> {
-        debug!("Sending benchmarker to the server...");
+        debug!("Sending benchmarker to server {}...", self.id());
         command::scp_to(
             true,
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             "benchmarker",
             &self.config.system.remote_work_dir
         )?;
@@ -56,12 +51,12 @@ impl Server {
             self.db_path());
         let result = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    debug!("No backup database is found on '{}'", self.address),
+                    debug!("No backup database is found on '{}'", self.connection_info.ip),
             Err(e) => return Err(e),
             _ => {}
         }
@@ -69,17 +64,17 @@ impl Server {
     }
 
     pub fn delete_backup_db_dir(&self) -> Result<()> {
-        debug!("Deleting backup dir on the server...");
+        debug!("Deleting backup dir on server {}...", self.id());
         let cmd = format!("rm -rf {}",
             self.backup_db_path());
         let result = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    debug!("No backup database is found on '{}'", self.address),
+                    debug!("No backup database is found on '{}'", self.connection_info.ip),
             Err(e) => return Err(e),
             _ => {}
         }
@@ -87,21 +82,21 @@ impl Server {
     }
 
     pub fn backup_db(&self) -> Result<()> {
-        debug!("Backing the db of the server...");
+        debug!("Backing the db of server {}...", self.id());
         let cmd = format!("cp -r {} {}",
             self.db_path(),
             self.backup_db_path()
         );
         command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         Ok(())
     }
 
     pub fn reset_db_dir(&self) -> Result<()> {
-        debug!("Resetting the db of the server...");
+        debug!("Resetting the db of server {}...", self.id());
         self.delete_db_dir()?;
         // copy the backup for replacement
         let cmd = format!("cp -r {} {}",
@@ -110,16 +105,20 @@ impl Server {
         );
         command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         Ok(())
     }
 
     pub fn start(&self) -> Result<()> {
-        info!("Starting the server...");
-        // [db name]
-        let prog_args = format!("{}", self.db_name);
+        info!("Starting server {}...", self.id());
+        // [db name] [server id] ([is sequencer])
+        let prog_args = if self.is_sequencer {
+            format!("{} {}", self.db_name, self.connection_info.id)
+        } else {
+            format!("{} {} 1", self.db_name, self.connection_info.id)
+        };
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
             self.config.jdk.remote_java_bin,
             self.vm_args,
@@ -129,7 +128,7 @@ impl Server {
         );
         command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         Ok(())
@@ -164,6 +163,14 @@ impl Server {
         unimplemented!();
     }
 
+    pub fn id(&self) -> usize {
+        self.connection_info.id
+    }
+
+    pub fn ip(&self) -> &str {
+        &self.connection_info.ip
+    }
+
     fn db_path(&self) -> String {
         format!("{}/databases/{}",
             &self.config.system.remote_work_dir,
@@ -185,9 +192,16 @@ impl Server {
     }
 
     fn log_path(&self) -> String {
-        format!("{}/server.log",
-            &self.config.system.remote_work_dir
-        )
+        if self.is_sequencer {
+            format!("{}/server-seq.log",
+                &self.config.system.remote_work_dir
+            )
+        } else {
+            format!("{}/server-{}.log",
+                &self.config.system.remote_work_dir,
+                &self.connection_info.id
+            )
+        }
     }
 
     fn grep_log(&self, keyword: &str) -> Result<String> {
@@ -197,7 +211,7 @@ impl Server {
         );
         let output = command::ssh(
             &self.config.system.user_name,
-            &self.address,
+            &self.connection_info.ip,
             &cmd
         )?;
         Ok(output)

@@ -3,24 +3,19 @@ pub mod init_env;
 pub mod load;
 pub mod benchmark;
 
-use std::fs;
 use std::sync::{Arc, Barrier, RwLock};
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use std::path::{Path, PathBuf};
 
 use log::*;
 
 use crate::error::{Result, BenchError};
 use crate::parameters::Parameter;
-use crate::properties::PropertiesFileMap;
-use crate::command;
 use crate::config::Config;
-use crate::connections::{Server, Client, Action};
+use crate::command;
+use crate::connections::{Server, Client, Action, ConnectionInfo};
 
-const BENCH_DIR: &'static str = "benchmarker";
-const PROP_DIR: &'static str = "props";
 const CHECKING_INTERVAL: u64 = 1;
 
 enum ThreadResult {
@@ -30,51 +25,70 @@ enum ThreadResult {
 }
 
 fn run_server_and_client(config: &Config, parameter: &Parameter,
-        db_name: &str, action: Action) -> Result<Option<u32>> {
+        db_name: &str, action: Action) -> Result<Vec<Option<u32>>> {
+    
+    // Generate connection information (ip, port)
+    let has_sequencer: bool = parameter
+        .get_autobencher_param("stand_alone_sequencer")?.parse()?;
+    let (server_list, client_list) =
+        generate_server_client_list(config, parameter, has_sequencer)?;
+    
     // Prepare the bench dir
-    let vm_args = prepare_bench_dir(&config, parameter)?;
+    let vm_args = crate::preparation::prepare_bench_dir(
+        &config, parameter, &server_list, &client_list)?;
 
     info!("Connecting to machines...");
+
+    info!("Killing existing benchmarker processes...");
+    kill_benchmarker_on_all_machines(config)?;
 
     // Use a mspc channel to collect results
     let (tx, rx): (Sender<ThreadResult>, Receiver<ThreadResult>)
         = mpsc::channel();
-    let barrier = Arc::new(Barrier::new(2));
     let mut threads = Vec::new();
+    let thread_count = server_list.len() + client_list.len();
+    let barrier = Arc::new(Barrier::new(thread_count));
 
     // Create server connections
     let stop_sign = Arc::new(RwLock::new(false));
-    let handle = create_server_connection(
-        barrier.clone(),
-        stop_sign.clone(),
-        config.clone(),
-        config.machines.server.clone(),
-        db_name.to_owned(), vm_args.clone(),
-        tx.clone(),
-        action
-    );
-    threads.push(handle);
+    for server_conn in &server_list {
+        let handle = create_server_connection(
+            barrier.clone(),
+            stop_sign.clone(),
+            config.clone(),
+            server_conn.clone(),
+            db_name.to_owned(), vm_args.clone(),
+            has_sequencer,
+            tx.clone(),
+            action
+        );
+        threads.push(handle);
+    }
 
     // Create a client connection
-    let handle = create_client_connection(
-        barrier.clone(),
-        config.clone(),
-        config.machines.client.clone(),
-        vm_args.clone(),
-        tx.clone(),
-        action
-    );
-    threads.push(handle);
+    for client_conn in &client_list {
+        let handle = create_client_connection(
+            barrier.clone(),
+            config.clone(),
+            client_conn.clone(),
+            vm_args.clone(),
+            tx.clone(),
+            action
+        );
+        threads.push(handle);
+    }
 
     // Check if there is any error
-    let mut throughput: Option<u32> = None;
+    let mut client_results: Vec<Option<u32>> = Vec::new();
     for _ in 0 .. threads.len() {
         match rx.recv().unwrap() {
             ThreadResult::ClientSucceed(th) => {
-                // Notify the servers to finish
-                let mut stop = stop_sign.write().unwrap();
-                *stop = true;
-                throughput = th;
+                client_results.push(th);
+                if client_results.len() >= client_list.len() {
+                    // Notify the servers to finish
+                    let mut stop = stop_sign.write().unwrap();
+                    *stop = true;
+                }
             },
             ThreadResult::Failed => {
                 return Err(BenchError::Message(
@@ -90,20 +104,71 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         thread.join().unwrap();
     }
 
-    Ok(throughput)
+    Ok(client_results)
+}
+
+fn generate_server_client_list(config: &Config, parameter: &Parameter,
+        has_sequencer: bool)
+    -> Result<(Vec<ConnectionInfo>, Vec<ConnectionInfo>)> {
+    
+    let mut server_count: usize = parameter
+        .get_autobencher_param("server_count")?.parse()?;
+    let server_client_ratio: f64 = parameter
+        .get_autobencher_param("server_client_ratio")?.parse()?;
+    let max_server_per_machine: usize = parameter
+        .get_autobencher_param("max_server_per_machine")?.parse()?;
+    let max_client_per_machine: usize = parameter
+        .get_autobencher_param("max_client_per_machine")?.parse()?;
+    
+    if has_sequencer {
+        server_count += 1;
+    }
+    let client_count = (server_count as f64 * server_client_ratio) as usize;
+
+    let server_list = ConnectionInfo::generate_connection_list(
+        &config.machines.servers,
+        server_count,
+        max_server_per_machine
+    )?;
+    let client_list = ConnectionInfo::generate_connection_list(
+        &config.machines.clients,
+        client_count,
+        max_client_per_machine
+    )?;
+
+    Ok((server_list, client_list))
+}
+
+fn kill_benchmarker_on_all_machines(config: &Config) -> Result<()> {
+    for machine in &config.machines.all {
+        let result = command::ssh(
+            &config.system.user_name,
+            &machine,
+            "pkill -f benchmarker"
+        );
+        match result {
+            Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
+                    info!("No existing process is found on '{}'", machine),
+            Err(e) => return Err(e),
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn create_server_connection(barrier: Arc<Barrier>, stop_sign: Arc<RwLock<bool>>,
-        config: Config, ip: String, db_name: String,
-        vm_args: String, result_ch: Sender<ThreadResult>,
-        action: Action) -> JoinHandle<()> {
+        config: Config, conn_info: ConnectionInfo, db_name: String,
+        vm_args: String, is_sequencer: bool,
+        result_ch: Sender<ThreadResult>, action: Action)
+        -> JoinHandle<()> {
     thread::spawn(move || {
-        let server = Server::new(config, ip.clone(),
-            db_name, vm_args);
-        let result = match execute_server_thread(server, barrier,
+        let server = Server::new(config, conn_info,
+            db_name, vm_args, is_sequencer);
+        let result = match execute_server_thread(&server, barrier,
                 stop_sign, action) {
             Err(e) => {
-                error!("The server ({}) occurs an error: {}", ip, e);
+                error!("Server {} (on {}) occurs an error: {}",
+                    server.id(), server.ip(), e);
                 ThreadResult::Failed
             },
             _ => ThreadResult::ServerSucceed
@@ -113,9 +178,8 @@ fn create_server_connection(barrier: Arc<Barrier>, stop_sign: Arc<RwLock<bool>>,
     })
 }
 
-fn execute_server_thread(server: Server, barrier: Arc<Barrier>,
+fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
     stop_sign: Arc<RwLock<bool>>, action: Action) -> Result<()> {
-    server.kill_existing_process()?;
     server.send_bench_dir()?;
 
     match action {
@@ -136,7 +200,7 @@ fn execute_server_thread(server: Server, barrier: Arc<Barrier>,
         thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
     }
 
-    info!("The server is ready.");
+    info!("Server {} is ready.", server.id());
 
     // Wait for all servers ready
     barrier.wait();
@@ -156,27 +220,26 @@ fn execute_server_thread(server: Server, barrier: Arc<Barrier>,
 }
 
 fn create_client_connection(barrier: Arc<Barrier>,
-        config: Config, ip: String, vm_args: String,
-        result_ch: Sender<ThreadResult>,
+        config: Config, conn_info: ConnectionInfo,
+        vm_args: String, result_ch: Sender<ThreadResult>,
         action: Action) -> JoinHandle<()> {
     thread::spawn(move || {
-        let client = Client::new(config, ip.clone(), vm_args);
-        let result = match execute_client_thread(client, barrier, action) {
+        let client = Client::new(config, conn_info, vm_args);
+        let result = match execute_client_thread(&client, barrier, action) {
             Err(e) => {
-                error!("The client ({}) occurs an error: {}",
-                    ip, e);
+                error!("Client {} (on {}) occurs an error: {}",
+                    client.id(), client.ip(), e);
                 ThreadResult::Failed
             },
             Ok(th) => ThreadResult::ClientSucceed(th)
         };
-        info!("The client finished.");
+        info!("Client {} finished.", client.id());
         result_ch.send(result).unwrap();
     })
 }
 
-fn execute_client_thread(client: Client, barrier: Arc<Barrier>,
+fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
         action: Action) -> Result<Option<u32>> {
-    client.kill_existing_process()?;
     client.clean_previous_results()?;
     client.send_bench_dir()?;
 
@@ -192,68 +255,10 @@ fn execute_client_thread(client: Client, barrier: Arc<Barrier>,
     if let Action::Benchmarking = action {
         // client.pull_csv()?;
         let throughput = client.get_total_throughput()?;
-        info!("The total throughput is {}", throughput);
+        info!("The total throughput of client {} is {}",
+            client.id(), throughput);
         Ok(Some(throughput))
     } else {
         Ok(None)
     }
-}
-
-// Output: vm args for properties files
-fn prepare_bench_dir(config: &Config, parameter: &Parameter) -> Result<String> {
-    info!("Preparing the benchmarker directory...");
-
-    // Ensure the existance of the benchmarker dir
-    fs::create_dir_all(BENCH_DIR)?;
-
-    // Copy the jar files to the benchmark dir
-    let dirname = parameter.get_autobencher_param("jar_dir")?;
-    copy_jars(dirname)?;
-
-    // Read the default properties
-    let mut map = PropertiesFileMap::from_dir(&Path::new("properties"))?;
-
-    // Apply the parameters
-    parameter.override_properties(&mut map);
-    set_paths(config, &mut map);
-    map.set(
-        "vanillabench",
-        "org.vanilladb.bench.BenchmarkerParameters.SERVER_IP",
-        &config.machines.server
-    );
-
-    // Generate the properties files to the benchmark dir
-    let prop_dir_path: PathBuf = [BENCH_DIR, PROP_DIR].iter().collect();
-    map.output_to_dir(&prop_dir_path)?;
-
-    let mut remote_prop_dir_path = PathBuf::new();
-    remote_prop_dir_path.push(&config.system.remote_work_dir);
-    remote_prop_dir_path.push(prop_dir_path);
-    map.get_vm_args(&remote_prop_dir_path)
-}
-
-fn copy_jars(dir_name: &str) -> Result<()> {
-    let dir_path = format!("jars/{}", dir_name);
-    let filenames = vec!["server.jar", "client.jar"];
-    for filename in filenames {
-        let jar_path = format!("{}/{}", dir_path, filename);
-        // Check if the jar exists
-        command::ls(&jar_path)?;
-        // Copy it to the benchmarker directory
-        command::cp(false, &jar_path, BENCH_DIR)?;
-    }
-    Ok(())
-}
-
-fn set_paths(config: &Config, map: &mut PropertiesFileMap) {
-    map.set(
-        "vanilladb",
-        "org.vanilladb.core.storage.file.FileMgr.DB_FILES_DIR",
-        &format!("{}/databases", config.system.remote_work_dir)
-    );
-    map.set(
-        "vanillabench",
-        "org.vanilladb.bench.StatisticMgr.OUTPUT_DIR",
-        &format!("{}/results", config.system.remote_work_dir)
-    );
 }

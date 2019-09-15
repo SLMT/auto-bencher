@@ -2,6 +2,7 @@
 mod error;
 mod config;
 mod command;
+mod preparation;
 mod subcommands;
 mod parameters;
 mod properties;

@@ -4,11 +4,19 @@
         "filename": "logging.properties"
     },
     {
+        "id": "org.vanilladb.core.config.file",
+        "filename": "vanilladb.properties"
+    },
+    {
         "id": "org.vanilladb.bench.config.file",
         "filename": "vanillabench.properties"
     },
     {
-        "id": "org.vanilladb.core.config.file",
-        "filename": "vanilladb.properties"
+        "id": "org.vanilladb.comm.config.file",
+        "filename": "vanilladbcomm.properties"
+    },
+    {
+        "id": "org.elasql.bench.config.file",
+        "filename": "elasqlbench.properties"
     }
 ]

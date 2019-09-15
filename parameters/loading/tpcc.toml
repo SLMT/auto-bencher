@@ -1,10 +1,11 @@
 
 [auto_bencher]
 jar_dir = "load"
-server_count = "3"
-server_client_ratio = "1"
-server_per_machine = "1"
-client_per_machine = "2"
+stand_alone_sequencer = "true"
+server_count = "3" # expect for the sequencer
+server_client_ratio = "1.0" # client / server
+max_server_per_machine = "1"
+max_client_per_machine = "2"
 
 [vanilladb]
 "org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "512000"
@@ -12,4 +13,8 @@ client_per_machine = "2"
 
 [vanillabench]
 "org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "2"
-"org.vanilladb.bench.benchmarks.tpcc.TpccConstants.NUM_WAREHOUSES" = "5"
+"org.vanilladb.bench.benchmarks.tpcc.TpccConstants.NUM_WAREHOUSES" = "3"
+
+[elasql]
+"org.elasql.server.Elasql.SERVICE_TYPE" = "2"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "1"
