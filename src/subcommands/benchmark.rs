@@ -2,35 +2,36 @@
 use std::path::Path;
 use std::fs::File;
 
-use colored::*;
 use log::*;
 use clap::{ArgMatches, Arg, App, SubCommand};
 use chrono::prelude::*;
 
-use crate::error::{Result, BenchError};
+use crate::error::Result;
 use crate::config::Config;
 use crate::parameters::{Parameter, ParameterList};
 use crate::connections::Action;
 
 pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("bench")
-                .arg(Arg::with_name("BENCH TYPE")
-                    .help("Sets the type of the benchmark")
+                .arg(Arg::with_name("DB NAME")
+                    .help("The name of the database that holds the testbed")
                     .required(true)
                     .index(1))
                 .arg(Arg::with_name("PARAMETER FILE")
                     .help("The parameters of running the benchmarks")
                     .required(true)
                     .index(2))
-                .about("running the benchmarks")
+                .about("running the benchmarks using the given parameters")
 }
 
 pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
-    let bench_type = args.value_of("BENCH TYPE").unwrap();
+    let db_name = args.value_of("DB NAME").unwrap();
     let param_file = args.value_of("PARAMETER FILE").unwrap();
     
     info!("Preparing for running benchmarks...");
     info!("Using parameter file '{}'", param_file);
+
+    // TODO: Check if the database exists
 
     // Read the parameter file
     let param_list = ParameterList::from_file(Path::new(param_file))?;
@@ -47,7 +48,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
         let throughput_str = match super::run_server_and_client(
             config, &param_list[job_id],
-            &bench_type, Action::Benchmarking
+            &db_name, Action::Benchmarking
         ) {
             Ok(th) => {
                 info!("Job {} finished successfully.", job_id);
@@ -65,7 +66,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     }
 
     // Show the final result (where is the database, the size...)
-    info!("Loading of benchmark {} finished.", bench_type);
+    info!("Benchmarking finished.");
 
     Ok(())
 }

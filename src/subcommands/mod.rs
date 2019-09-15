@@ -30,7 +30,7 @@ enum ThreadResult {
 }
 
 fn run_server_and_client(config: &Config, parameter: &Parameter,
-        bench_type: &str, action: Action) -> Result<Option<u32>> {
+        db_name: &str, action: Action) -> Result<Option<u32>> {
     // Prepare the bench dir
     let vm_args = prepare_bench_dir(&config, parameter)?;
 
@@ -49,7 +49,7 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         stop_sign.clone(),
         config.clone(),
         config.machines.server.clone(),
-        bench_type.to_owned(), vm_args.clone(),
+        db_name.to_owned(), vm_args.clone(),
         tx.clone(),
         action
     );
@@ -94,12 +94,12 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
 }
 
 fn create_server_connection(barrier: Arc<Barrier>, stop_sign: Arc<RwLock<bool>>,
-        config: Config, ip: String, bench_type: String,
+        config: Config, ip: String, db_name: String,
         vm_args: String, result_ch: Sender<ThreadResult>,
         action: Action) -> JoinHandle<()> {
     thread::spawn(move || {
         let server = Server::new(config, ip.clone(),
-            bench_type, vm_args);
+            db_name, vm_args);
         let result = match execute_server_thread(server, barrier,
                 stop_sign, action) {
             Err(e) => {

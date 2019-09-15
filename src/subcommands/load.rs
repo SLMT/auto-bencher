@@ -1,5 +1,5 @@
 
-use std::path::PathBuf;
+use std::path::Path;
 
 use colored::*;
 use log::*;
@@ -12,48 +12,41 @@ use crate::connections::Action;
 
 pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("load")
-                .arg(Arg::with_name("BENCH TYPE")
-                    .help("Sets the type of the benchmark")
+                .arg(Arg::with_name("DB NAME")
+                    .help("The name of the database for holding testing data")
                     .required(true)
                     .index(1))
-                .about("loads the testbed of the specified benchmark")
+                .arg(Arg::with_name("PARAMETER FILE")
+                    .help("The parameters of running the loading program")
+                    .required(true)
+                    .index(2))
+                .about("loads the testbed using the given parameters")
 }
 
 pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
-    let bench_type = args.value_of("BENCH TYPE").unwrap();
+    let db_name = args.value_of("DB NAME").unwrap();
+    let param_file = args.value_of("PARAMETER FILE").unwrap();
     
-    info!("Preparing for loading {} benchmarks...",
-        bench_type.cyan());
+    info!("Preparing for loading testbed into '{}'...",
+        db_name.cyan());
+    info!("Using parameter file '{}'", param_file);
 
     // Read the parameter file
-    let param_list = read_parameter_file(bench_type)?;
+    let param_list = ParameterList::from_file(Path::new(param_file))?;
 
     // The file should only produce single "Parameter"
     let param_list = param_list.to_vec();
     if param_list.len() > 1 {
         return Err(BenchError::Message(format!(
-            "{}'s parameter file contains more than one combination", 
-            bench_type.cyan()
-        )))
+            "The parameter file contains more than one combination"
+        )));
     }
 
     super::run_server_and_client(config, &param_list[0],
-        &bench_type, Action::Loading)?;
+        &db_name, Action::Loading)?;
 
     // Show the final result (where is the database, the size...)
-    info!("Loading of benchmark {} finished.", bench_type);
+    info!("Loading testbed finished.");
 
     Ok(())
-}
-
-fn read_parameter_file(bench_type: &str) -> Result<ParameterList> {
-    let mut param_file = PathBuf::new();
-    param_file.push("parameters");
-    param_file.push("loading");
-    param_file.push(bench_type);
-    param_file.set_extension("toml");
-
-    info!("Reading the parameter file: '{}'", param_file.to_str().unwrap());
-
-    ParameterList::from_file(&param_file)
 }

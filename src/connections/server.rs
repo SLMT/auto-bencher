@@ -8,17 +8,17 @@ use crate::command;
 pub struct Server {
     config: Config,
     address: String,
-    bench_type: String,
+    db_name: String,
     vm_args: String
 }
 
 impl Server {
     pub fn new(config: Config, address: String,
-        bench_type: String, vm_args: String) -> Server {
+        db_name: String, vm_args: String) -> Server {
         Server {
             config,
             address,
-            bench_type,
+            db_name,
             vm_args
         }
     }
@@ -119,7 +119,7 @@ impl Server {
     pub fn start(&self) -> Result<()> {
         info!("Starting the server...");
         // [db name]
-        let prog_args = format!("{}", self.bench_type);
+        let prog_args = format!("{}", self.db_name);
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
             self.config.jdk.remote_java_bin,
             self.vm_args,
@@ -167,14 +167,14 @@ impl Server {
     fn db_path(&self) -> String {
         format!("{}/databases/{}",
             &self.config.system.remote_work_dir,
-            &self.bench_type
+            &self.db_name
         )
     }
 
     fn backup_db_path(&self) -> String {
         format!("{}/databases/{}-backup",
             &self.config.system.remote_work_dir,
-            &self.bench_type
+            &self.db_name
         )
     }
 
