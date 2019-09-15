@@ -79,7 +79,7 @@ fn check_java_runtime(config: &Config, ip: &str) -> Result<bool> {
 
     // Check if the java is installed
     match command::ssh(&config.system.user_name, ip, &cmd) {
-        Err(BenchError::NoSuchCommand(_)) => {
+        Err(BenchError::NoSuchCommandOnRemote(_, _)) => {
             Ok(false)
         },
         Err(e) => {
