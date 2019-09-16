@@ -44,9 +44,16 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     let (tx, rx): (Sender<ThreadResult>, Receiver<ThreadResult>)
         = mpsc::channel();
     let mut threads = Vec::new();
-    let thread_count = match sequencer {
-        Some(_) => server_list.len() + client_list.len() + 1,
-        None => server_list.len() + client_list.len()
+    
+    // Calculate number of threads
+    let mut thread_count = match sequencer {
+        Some(_) => server_list.len() + 1,
+        None => server_list.len()
+    };
+    thread_count += if let Action::Loading = action {
+        1
+    } else {
+        client_list.len()
     };
     let barrier = Arc::new(Barrier::new(thread_count));
 
@@ -81,17 +88,29 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         threads.push(handle);
     }
 
-    // Create a client connection
-    for client_conn in &client_list {
+    // Create client connections
+    if let Action::Loading = action {
         let handle = create_client_connection(
             barrier.clone(),
             config.clone(),
-            client_conn.clone(),
+            client_list[0].clone(),
             vm_args.clone(),
             tx.clone(),
-            action
+            Action::Loading
         );
         threads.push(handle);
+    } else {
+        for client_conn in &client_list {
+            let handle = create_client_connection(
+                barrier.clone(),
+                config.clone(),
+                client_conn.clone(),
+                vm_args.clone(),
+                tx.clone(),
+                Action::Benchmarking
+            );
+            threads.push(handle);
+        }
     }
 
     // Check if there is any error
