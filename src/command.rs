@@ -9,7 +9,7 @@ fn output_into_string(mut command: Command) -> Result<String> {
     let cmd_str = format!("{:?}", command);
     trace!("executing: {}", cmd_str);
     let output = command.output()?;
-    match output.status.code() {
+    let result = match output.status.code() {
         Some(0) => {
             Ok(String::from_utf8(output.stdout)?)
         },
@@ -23,7 +23,10 @@ fn output_into_string(mut command: Command) -> Result<String> {
         None => {
             Err(BenchError::CommandKilledBySingal(cmd_str))
         } 
-    }
+    };
+
+    trace!("result: {:?}", result);
+    result
 }
 
 /// Returns: shown messages
