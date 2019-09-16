@@ -82,6 +82,11 @@ impl Server {
     }
 
     pub fn backup_db(&self) -> Result<()> {
+        // Sequencer does not have database
+        if self.is_sequencer {
+            return Ok(());
+        }
+
         debug!("Backing the db of server {}...", self.id());
         let cmd = format!("cp -r {} {}",
             self.db_path(),
@@ -96,6 +101,11 @@ impl Server {
     }
 
     pub fn reset_db_dir(&self) -> Result<()> {
+        // Sequencer does not have database
+        if self.is_sequencer {
+            return Ok(());
+        }
+        
         debug!("Resetting the db of server {}...", self.id());
         self.delete_db_dir()?;
         // copy the backup for replacement
@@ -169,6 +179,10 @@ impl Server {
 
     pub fn ip(&self) -> &str {
         &self.connection_info.ip
+    }
+
+    pub fn is_sequencer(&self) -> bool {
+        self.is_sequencer
     }
 
     fn db_path(&self) -> String {

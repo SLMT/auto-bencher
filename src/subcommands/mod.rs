@@ -197,7 +197,11 @@ fn create_server_connection(barrier: Arc<Barrier>, stop_sign: Arc<RwLock<bool>>,
             },
             _ => ThreadResult::ServerSucceed
         };
-        info!("The server finished.");
+        if server.is_sequencer() {
+            info!("Server {} finished.", server.id());
+        } else {
+            info!("The sequencer finished.");
+        }
         result_ch.send(result).unwrap();
     })
 }
@@ -224,7 +228,11 @@ fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
         thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
     }
 
-    info!("Server {} is ready.", server.id());
+    if server.is_sequencer() {
+        info!("Server {} is ready.", server.id());
+    } else {
+        info!("The sequencer is ready.");
+    }
 
     // Wait for all servers ready
     barrier.wait();
