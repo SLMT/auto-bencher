@@ -25,6 +25,7 @@ pub struct Jdk {
     pub use_custom_jdk: bool,
     pub dir_name: String,
     pub package_path: String,
+    pub jvm_args: String,
     #[serde(skip)]
     pub package_filename: String,
     #[serde(skip)]
