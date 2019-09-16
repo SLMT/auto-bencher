@@ -44,7 +44,10 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     let (tx, rx): (Sender<ThreadResult>, Receiver<ThreadResult>)
         = mpsc::channel();
     let mut threads = Vec::new();
-    let thread_count = server_list.len() + client_list.len();
+    let thread_count = match sequencer {
+        Some(_) => server_list.len() + client_list.len() + 1,
+        None => server_list.len() + client_list.len()
+    };
     let barrier = Arc::new(Barrier::new(thread_count));
 
     // Create server connections
