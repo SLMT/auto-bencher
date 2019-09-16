@@ -9,6 +9,7 @@ use super::ConnectionInfo;
 pub struct Server {
     config: Config,
     connection_info: ConnectionInfo,
+    proc_name: String,
     db_name: String,
     vm_args: String,
     is_sequencer: bool
@@ -19,6 +20,11 @@ impl Server {
         db_name: String, vm_args: String,
         is_sequencer: bool) -> Server {
         
+        let proc_name = if is_sequencer {
+            format!("sequencer")
+        } else {
+            format!("server {}", connection_info.id)
+        };
         let db_name = if is_sequencer {
             format!("{}-seq", db_name)
         } else {
@@ -28,6 +34,7 @@ impl Server {
         Server {
             config,
             connection_info,
+            proc_name,
             db_name,
             vm_args,
             is_sequencer
@@ -35,7 +42,7 @@ impl Server {
     }
 
     pub fn send_bench_dir(&self) -> Result<()> {
-        debug!("Sending benchmarker to server {}...", self.id());
+        debug!("Sending benchmarker to {}...", self.proc_name);
         command::scp_to(
             true,
             &self.config.system.user_name,
@@ -64,7 +71,7 @@ impl Server {
     }
 
     pub fn delete_backup_db_dir(&self) -> Result<()> {
-        debug!("Deleting backup dir on server {}...", self.id());
+        debug!("Deleting backup dir on {}...", self.proc_name);
         let cmd = format!("rm -rf {}",
             self.backup_db_path());
         let result = command::ssh(
@@ -87,7 +94,7 @@ impl Server {
             return Ok(());
         }
 
-        debug!("Backing the db of server {}...", self.id());
+        debug!("Backing the db of {}...", self.proc_name);
         let cmd = format!("cp -r {} {}",
             self.db_path(),
             self.backup_db_path()
@@ -105,8 +112,8 @@ impl Server {
         if self.is_sequencer {
             return Ok(());
         }
-        
-        debug!("Resetting the db of server {}...", self.id());
+
+        debug!("Resetting the db of {}...", self.proc_name);
         self.delete_db_dir()?;
         // copy the backup for replacement
         let cmd = format!("cp -r {} {}",
@@ -122,7 +129,7 @@ impl Server {
     }
 
     pub fn start(&self) -> Result<()> {
-        info!("Starting server {}...", self.id());
+        info!("Starting {}...", self.proc_name);
         // [db name] [server id] ([is sequencer])
         let prog_args = if self.is_sequencer {
             format!("{} {} 1", self.db_name, self.connection_info.id)
