@@ -25,7 +25,7 @@ enum ThreadResult {
 }
 
 fn run_server_and_client(config: &Config, parameter: &Parameter,
-        db_name: &str, action: Action) -> Result<Vec<Option<u32>>> {
+        db_name: &str, action: Action, report_dir: Option<String>) -> Result<Vec<Option<u32>>> {
     
     // Generate connection information (ip, port)
     let (sequencer, server_list, client_list) =
@@ -100,7 +100,8 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
             client_list[client_id].clone(),
             vm_args.clone(),
             tx.clone(),
-            action
+            action,
+            report_dir.clone()
         );
         threads.push(handle);
     }
@@ -258,10 +259,10 @@ fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
 fn create_client_connection(barrier: Arc<Barrier>,
         config: Config, conn_info: ConnectionInfo,
         vm_args: String, result_ch: Sender<ThreadResult>,
-        action: Action) -> JoinHandle<()> {
+        action: Action, report_dir: Option<String>) -> JoinHandle<()> {
     thread::spawn(move || {
         let client = Client::new(config, conn_info, vm_args);
-        let result = match execute_client_thread(&client, barrier, action) {
+        let result = match execute_client_thread(&client, barrier, action, report_dir) {
             Err(e) => {
                 error!("Client {} (on {}) occurs an error: {}",
                     client.id(), client.ip(), e);
@@ -275,7 +276,7 @@ fn create_client_connection(barrier: Arc<Barrier>,
 }
 
 fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
-        action: Action) -> Result<Option<u32>> {
+        action: Action, report_dir: Option<String>) -> Result<Option<u32>> {
     client.clean_previous_results()?;
     client.send_bench_dir()?;
 
@@ -289,7 +290,7 @@ fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
     }
 
     if let Action::Benchmarking = action {
-        // client.pull_csv()?;
+        client.pull_csv(&report_dir.unwrap())?;
         let throughput = client.get_total_throughput()?;
         info!("The total throughput of client {} is {}",
             client.id(), throughput);

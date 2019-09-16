@@ -43,7 +43,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     }
 
     super::run_server_and_client(config, &param_list[0],
-        &db_name, Action::Loading)?;
+        &db_name, Action::Loading, None)?;
 
     // Show the final result (where is the database, the size...)
     info!("Loading testbed finished.");

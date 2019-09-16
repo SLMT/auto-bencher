@@ -99,34 +99,38 @@ impl Client {
         unimplemented!();
     }
 
-    pub fn pull_csv(&self) -> Result<()> {
-        let remote_result_path = format!("{}/*.csv",
-            self.result_path());
+    pub fn pull_csv(&self, dest: &str) -> Result<()> {
+        // Get the file name of the csv
+        let filename = self.grep_csv_filename()?;
+
+        // Pull the csv file
+        let remote_result_path = format!("{}/{}",
+            self.result_path(), filename);
         command::scp_from(
             false,
             &self.config.system.user_name,
             &self.connection_info.ip,
             &remote_result_path,
-            "results"
+            dest
         )?;
         Ok(())
     }
 
     pub fn get_total_throughput(&self) -> Result<u32> {
-        let cmd = format!("grep 'TOTAL' {}/*",
-            self.result_path()
+        let cmd = format!("grep 'TOTAL' {}/*-{}.txt",
+            self.result_path(), self.id()
         );
         let output = command::ssh(
             &self.config.system.user_name,
             &self.connection_info.ip,
             &cmd
         )?;
-        // Output should be '...:TOTAL - committed: xxxx,...'
-        let start = output.find("committed")
+        // Output should be 'TOTAL XXXXX avg latency: XX ms'
+        let start = output.find("TOTAL")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
             ))? + 11;
-        let end = output[start ..].find(",")
+        let end = output[start ..].find("avg")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
             ))? + start;
@@ -171,5 +175,22 @@ impl Client {
             &cmd
         )?;
         Ok(output)
+    }
+
+    fn grep_csv_filename(&self) -> Result<String> {
+        let cmd = format!("ls {} | grep '{}[.]csv'",
+            self.result_path(), self.id());
+        let filename = command::ssh(
+            &self.config.system.user_name,
+            self.ip(),
+            &cmd
+        )?;
+
+        if filename.is_empty() {
+            return Err(BenchError::Message(
+                format!("cannot find the csv file on {}", self.ip())));
+        }
+
+        Ok(filename)
     }
 }

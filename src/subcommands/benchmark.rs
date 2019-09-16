@@ -1,6 +1,7 @@
 
 use std::path::Path;
 use std::fs::File;
+use std::collections::BTreeMap;
 
 use log::*;
 use clap::{ArgMatches, Arg, App, SubCommand};
@@ -38,17 +39,19 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     let param_list = param_list.to_vec();
 
     // Prepare for the final report
-    std::fs::create_dir_all("reports")?;
-    let mut writer = get_report_writer()?;
+    let main_report_dir = create_report_dir()?;
+    let mut writer = get_report_writer(&main_report_dir)?;
     write_csv_header(&mut writer, &param_list[0])?;
 
     // Running jobs
     for job_id in 0 .. param_list.len() {
         info!("Running job {}...", job_id);
 
+        let job_report_dir = format!("{}/job-{}", main_report_dir, job_id);
+
         let throughput_str = match super::run_server_and_client(
             config, &param_list[job_id],
-            &db_name, Action::Benchmarking
+            &db_name, Action::Benchmarking, Some(job_report_dir.clone())
         ) {
             Ok(ths) => {
                 let mut total_throughput = 0;
@@ -65,6 +68,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
         };
 
         info!("Writing the result to the report...");
+        aggregate_results(&job_report_dir)?;
         write_report(&mut writer, &param_list[job_id], &throughput_str)?;
         info!("Finished writing the result of job {}", job_id);
     }
@@ -75,10 +79,57 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn get_report_writer() -> Result<csv::Writer<File>> {
+fn create_report_dir() -> Result<String> {
     let dt = Local::now();
-    let dt_str = dt.format("%Y_%m_%d_%H_%M_%S").to_string();
-    let path = format!("reports/{}.csv", dt_str);
+    let date_str = dt.format("%Y_%m_%d").to_string();
+    let time_str = dt.format("%H_%M_%S").to_string();
+    let report_dir_path = format!("reports/{}/{}", date_str, time_str);
+    std::fs::create_dir_all(&report_dir_path)?;
+    Ok(report_dir_path)
+}
+
+fn aggregate_results(report_dir: &str) -> Result<()> {
+    // Prepare variables
+    let mut timeline: BTreeMap<usize, usize> = BTreeMap::new();
+
+    // Open each csv files
+    for entry in std::fs::read_dir(report_dir)? {
+        let filepath = entry?.path();
+        if filepath.is_file() && filepath.extension().unwrap() == "csv" {
+            
+            debug!("Reading {}...", filepath.to_str().unwrap());
+
+            let mut reader = csv::Reader::from_path(&filepath)?;
+
+            // Read each row
+            for result in reader.records() {
+                let record = result?;
+                let time: usize = record.get(0).unwrap().parse()?;
+                let throughput: usize = record.get(1).unwrap().parse()?;
+
+                let total = timeline.entry(time).or_default();
+                *total += throughput;
+            }
+
+            debug!("Finished parsing {}.", filepath.to_str().unwrap());
+        }
+    }
+
+    // Write to an output file
+    let filename = format!("{}/timeline.csv", report_dir);
+    let mut writer = csv::Writer::from_path(filename)?;
+    writer.write_record(&["time", "throughput"])?;
+    for (time, throughput) in timeline {
+        writer.write_record(&[time.to_string(), throughput.to_string()])?;
+    }
+    writer.flush()?;
+
+    Ok(())
+}
+
+fn get_report_writer(report_dir: &str) -> Result<csv::Writer<File>> {
+    std::fs::create_dir_all(report_dir)?;
+    let path = format!("{}/throughput.csv", report_dir);
     Ok(csv::Writer::from_path(path)?)
 }
 
