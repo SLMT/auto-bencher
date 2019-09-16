@@ -35,6 +35,7 @@ pub struct Jdk {
 pub struct Machines {
     #[serde(skip)]
     pub all: Vec<String>,
+    pub sequencer: Option<String>,
     pub servers: Vec<String>,
     pub clients: Vec<String>
 }
@@ -73,6 +74,9 @@ impl Config {
     }
 
     fn generate_all_ips(&mut self) {
+        if let Some(seq) = &self.machines.sequencer {
+            self.machines.all.push(seq.clone());
+        }
         self.machines.all.append(&mut self.machines.servers.clone());
         self.machines.all.append(&mut self.machines.clients.clone());
     }

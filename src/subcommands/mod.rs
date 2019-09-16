@@ -28,14 +28,12 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         db_name: &str, action: Action) -> Result<Vec<Option<u32>>> {
     
     // Generate connection information (ip, port)
-    let has_sequencer: bool = parameter
-        .get_autobencher_param("stand_alone_sequencer")?.parse()?;
-    let (server_list, client_list) =
-        generate_server_client_list(config, parameter, has_sequencer)?;
+    let (sequencer, server_list, client_list) =
+        generate_connection_list(config, parameter)?;
     
     // Prepare the bench dir
     let vm_args = crate::preparation::prepare_bench_dir(
-        &config, parameter, &server_list, &client_list)?;
+        &config, parameter, &sequencer, &server_list, &client_list)?;
 
     info!("Connecting to machines...");
 
@@ -58,7 +56,22 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
             config.clone(),
             server_conn.clone(),
             db_name.to_owned(), vm_args.clone(),
-            has_sequencer,
+            false,
+            tx.clone(),
+            action
+        );
+        threads.push(handle);
+    }
+
+    // Create sequencer connection
+    if let Some(seq_conn) = sequencer {
+        let handle = create_server_connection(
+            barrier.clone(),
+            stop_sign.clone(),
+            config.clone(),
+            seq_conn.clone(),
+            db_name.to_owned(), vm_args.clone(),
+            true,
             tx.clone(),
             action
         );
@@ -107,11 +120,10 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     Ok(client_results)
 }
 
-fn generate_server_client_list(config: &Config, parameter: &Parameter,
-        has_sequencer: bool)
-    -> Result<(Vec<ConnectionInfo>, Vec<ConnectionInfo>)> {
+fn generate_connection_list(config: &Config, parameter: &Parameter)
+    -> Result<(Option<ConnectionInfo>, Vec<ConnectionInfo>, Vec<ConnectionInfo>)> {
     
-    let mut server_count: usize = parameter
+    let server_count: usize = parameter
         .get_autobencher_param("server_count")?.parse()?;
     let server_client_ratio: f64 = parameter
         .get_autobencher_param("server_client_ratio")?.parse()?;
@@ -120,11 +132,13 @@ fn generate_server_client_list(config: &Config, parameter: &Parameter,
     let max_client_per_machine: usize = parameter
         .get_autobencher_param("max_client_per_machine")?.parse()?;
     
-    if has_sequencer {
-        server_count += 1;
-    }
     let client_count = (server_count as f64 * server_client_ratio) as usize;
 
+    let sequencer = config.machines.sequencer.clone().map(|seq_ip| ConnectionInfo {
+        id: server_count,
+        ip: seq_ip,
+        port: 30000
+    });
     let server_list = ConnectionInfo::generate_connection_list(
         &config.machines.servers,
         server_count,
@@ -136,7 +150,7 @@ fn generate_server_client_list(config: &Config, parameter: &Parameter,
         max_client_per_machine
     )?;
 
-    Ok((server_list, client_list))
+    Ok((sequencer, server_list, client_list))
 }
 
 fn kill_benchmarker_on_all_machines(config: &Config) -> Result<()> {

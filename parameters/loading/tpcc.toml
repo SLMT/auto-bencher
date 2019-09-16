@@ -1,7 +1,6 @@
 
 [auto_bencher]
 jar_dir = "load"
-stand_alone_sequencer = "true"
 server_count = "3" # expect for the sequencer
 server_client_ratio = "1.0" # client / server
 max_server_per_machine = "1"

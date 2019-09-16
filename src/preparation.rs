@@ -16,8 +16,8 @@ const PROP_DIR: &'static str = "props";
 
 // Output: vm args for properties files
 pub fn prepare_bench_dir(config: &Config, parameter: &Parameter,
-        server_list: &Vec<ConnectionInfo>, client_list: &Vec<ConnectionInfo>)
-        -> Result<String> {
+        sequencer: &Option<ConnectionInfo>, server_list: &Vec<ConnectionInfo>,
+        client_list: &Vec<ConnectionInfo>) -> Result<String> {
     info!("Preparing the benchmarker directory...");
 
     // Ensure the existance of the benchmarker dir
@@ -33,7 +33,7 @@ pub fn prepare_bench_dir(config: &Config, parameter: &Parameter,
     // Apply the parameters
     parameter.override_properties(&mut map);
     set_paths(config, &mut map);
-    set_connection_properties(&mut map, parameter, &server_list, &client_list)?;
+    set_connection_properties(&mut map, parameter, sequencer, server_list, client_list)?;
 
     // Generate the properties files to the benchmark dir
     let prop_dir_path: PathBuf = [BENCH_DIR, PROP_DIR].iter().collect();
@@ -72,8 +72,8 @@ fn set_paths(config: &Config, map: &mut PropertiesFileMap) {
 }
 
 fn set_connection_properties(map: &mut PropertiesFileMap, parameter: &Parameter,
-        server_list: &Vec<ConnectionInfo>, client_list: &Vec<ConnectionInfo>) 
-        -> Result<()> {
+        sequencer: &Option<ConnectionInfo>, server_list: &Vec<ConnectionInfo>,
+        client_list: &Vec<ConnectionInfo>) -> Result<()> {
     
     // Set server view
     let mut server_view = String::new();
@@ -82,6 +82,10 @@ fn set_connection_properties(map: &mut PropertiesFileMap, parameter: &Parameter,
             server_view.push_str(", ");
         }
         server_view.push_str(&server.to_string());
+    }
+    if let Some(seq_info) = sequencer {
+        server_view.push_str(", ");
+        server_view.push_str(&seq_info.to_string());
     }
     map.set(
         "vanilladbcomm",
@@ -104,11 +108,19 @@ fn set_connection_properties(map: &mut PropertiesFileMap, parameter: &Parameter,
     );
 
     // Set stand alone sequencer
-    map.set(
-        "vanilladbcomm",
-        "org.vanilladb.comm.server.ServerAppl.STAND_ALONE_SEQUENCER",
-        parameter.get_autobencher_param("stand_alone_sequencer")?
-    );
+    if let Some(_) = sequencer {
+        map.set(
+            "vanilladbcomm",
+            "org.vanilladb.comm.server.ServerAppl.STAND_ALONE_SEQUENCER",
+            "true"
+        );
+    } else {
+        map.set(
+            "vanilladbcomm",
+            "org.vanilladb.comm.server.ServerAppl.STAND_ALONE_SEQUENCER",
+            "false"
+        );
+    }
 
     Ok(())
 }
