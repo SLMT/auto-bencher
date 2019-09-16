@@ -46,14 +46,14 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     let mut threads = Vec::new();
     
     // Calculate number of threads
-    let mut thread_count = match sequencer {
-        Some(_) => server_list.len() + 1,
-        None => server_list.len()
-    };
-    thread_count += if let Action::Loading = action {
+    let client_count = if let Action::Loading = action {
         1
     } else {
         client_list.len()
+    };
+    let thread_count = match sequencer {
+        Some(_) => server_list.len() + client_count + 1,
+        None => server_list.len() + client_count
     };
     let barrier = Arc::new(Barrier::new(thread_count));
 
@@ -89,28 +89,16 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
     }
 
     // Create client connections
-    if let Action::Loading = action {
+    for client_id in 0 .. client_count {
         let handle = create_client_connection(
             barrier.clone(),
             config.clone(),
-            client_list[0].clone(),
+            client_list[client_id].clone(),
             vm_args.clone(),
             tx.clone(),
             Action::Loading
         );
         threads.push(handle);
-    } else {
-        for client_conn in &client_list {
-            let handle = create_client_connection(
-                barrier.clone(),
-                config.clone(),
-                client_conn.clone(),
-                vm_args.clone(),
-                tx.clone(),
-                Action::Benchmarking
-            );
-            threads.push(handle);
-        }
     }
 
     // Check if there is any error
@@ -119,7 +107,7 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
         match rx.recv().unwrap() {
             ThreadResult::ClientSucceed(th) => {
                 client_results.push(th);
-                if client_results.len() >= client_list.len() {
+                if client_results.len() >= client_count {
                     // Notify the servers to finish
                     let mut stop = stop_sign.write().unwrap();
                     *stop = true;
