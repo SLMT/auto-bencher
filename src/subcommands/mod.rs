@@ -100,7 +100,7 @@ fn run_server_and_client(config: &Config, parameter: &Parameter,
             client_list[client_id].clone(),
             vm_args.clone(),
             tx.clone(),
-            Action::Loading
+            action
         );
         threads.push(handle);
     }
