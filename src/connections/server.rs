@@ -137,7 +137,7 @@ impl Server {
     pub fn check_for_ready(&self) -> Result<bool> {
         self.check_for_error()?;
 
-        match self.grep_log("VanillaBench server ready") {
+        match self.grep_log("ElaSQL server ready") {
             Ok(_) => Ok(true),
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
                 Ok(false),
