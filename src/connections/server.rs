@@ -115,9 +115,9 @@ impl Server {
         info!("Starting server {}...", self.id());
         // [db name] [server id] ([is sequencer])
         let prog_args = if self.is_sequencer {
-            format!("{} {}", self.db_name, self.connection_info.id)
-        } else {
             format!("{} {} 1", self.db_name, self.connection_info.id)
+        } else {
+            format!("{} {}", self.db_name, self.connection_info.id)
         };
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
             self.config.jdk.remote_java_bin,

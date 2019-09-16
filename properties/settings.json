@@ -18,5 +18,9 @@
     {
         "id": "org.elasql.bench.config.file",
         "filename": "elasqlbench.properties"
+    },
+    {
+        "id": "org.elasql.config.file",
+        "filename": "elasql.properties"
     }
 ]
