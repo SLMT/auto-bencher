@@ -32,14 +32,9 @@ pub fn run_in_threads(config: &Config, db_name: &str,
     let mut threads = Vec::new();
     
     // Calculate number of threads
-    let client_count = if let Action::Loading = action {
-        1
-    } else {
-        client_list.len()
-    };
     let thread_count = match sequencer {
-        Some(_) => server_list.len() + client_count + 1,
-        None => server_list.len() + client_count
+        Some(_) => server_list.len() + client_list.len() + 1,
+        None => server_list.len() + client_list.len()
     };
     let barrier = Arc::new(Barrier::new(thread_count));
 
@@ -75,11 +70,11 @@ pub fn run_in_threads(config: &Config, db_name: &str,
     }
 
     // Create client connections
-    for client_id in 0 .. client_count {
+    for client_conn in &client_list {
         let handle = client::create_client_thread(
             barrier.clone(),
             config.clone(),
-            client_list[client_id].clone(),
+            client_conn.clone(),
             vm_args.to_owned(),
             tx.clone(),
             action,
@@ -94,7 +89,7 @@ pub fn run_in_threads(config: &Config, db_name: &str,
         match rx.recv().unwrap() {
             ThreadResult::ClientSucceed(th) => {
                 client_results.push(th);
-                if client_results.len() >= client_count {
+                if client_results.len() >= client_list.len() {
                     info!("All clients finished properly. Stopping server threads...");
 
                     // Notify the servers to finish

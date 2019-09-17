@@ -18,7 +18,7 @@ fn run(config: &Config, parameter: &Parameter,
     
     // Generate connection information (ip, port)
     let (sequencer, server_list, client_list) =
-        generate_connection_list(config, parameter)?;
+        generate_connection_list(config, parameter, action)?;
     
     // Prepare the bench dir
     let mut vm_args = crate::preparation::prepare_bench_dir(
@@ -37,7 +37,7 @@ fn run(config: &Config, parameter: &Parameter,
         &vm_args, sequencer, server_list, client_list)
 }
 
-fn generate_connection_list(config: &Config, parameter: &Parameter)
+fn generate_connection_list(config: &Config, parameter: &Parameter, action: Action)
     -> Result<(Option<ConnectionInfo>, Vec<ConnectionInfo>, Vec<ConnectionInfo>)> {
     
     let server_count: usize = parameter
@@ -61,11 +61,19 @@ fn generate_connection_list(config: &Config, parameter: &Parameter)
         server_count,
         max_server_per_machine
     )?;
-    let client_list = ConnectionInfo::generate_connection_list(
-        &config.machines.clients,
-        client_count,
-        max_client_per_machine
-    )?;
+    let client_list = if let Action::Loading = action {
+        ConnectionInfo::generate_connection_list(
+            &config.machines.clients,
+            1,
+            max_client_per_machine
+        )?
+    } else {
+        ConnectionInfo::generate_connection_list(
+            &config.machines.clients,
+            client_count,
+            max_client_per_machine
+        )?
+    };
 
     Ok((sequencer, server_list, client_list))
 }
