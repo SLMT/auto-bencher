@@ -69,7 +69,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
         info!("Writing the result to the report...");
         aggregate_results(&main_report_dir, job_id)?;
-        write_report(&mut writer, &param_list[job_id], &throughput_str)?;
+        write_report(&mut writer, job_id, &param_list[job_id], &throughput_str)?;
         info!("Finished writing the result of job {}", job_id);
     }
 
@@ -146,18 +146,24 @@ fn write_csv_header(writer: &mut csv::Writer<File>,
         parameter: &Parameter) -> Result<()> {
     
     let properties = parameter.get_properties();
-    let mut headers: Vec<_> = properties.iter()
+    let mut headers = vec!["job_id"];
+    let mut params: Vec<_> = properties.iter()
         .map(|p| p.split(".").last().unwrap()).collect();
+    headers.append(&mut params);
     headers.push("throughput");
     writer.write_record(headers)?;
 
     Ok(())
 }
 
-fn write_report(writer: &mut csv::Writer<File>,
+fn write_report(writer: &mut csv::Writer<File>, job_id: usize,
         parameter: &Parameter, throughput_str: &str) -> Result<()> {
-    
-    let mut values = parameter.get_properties_values();
+    let job_id = job_id.to_string();
+    let mut values: Vec<&str> = vec![];
+    let mut params = parameter.get_properties_values();
+
+    values.push(&job_id);
+    values.append(&mut params);
     values.push(throughput_str);
     writer.write_record(values)?;
     writer.flush()?;
