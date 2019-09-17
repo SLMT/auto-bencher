@@ -110,8 +110,8 @@ fn aggregate_results(report_dir: &str) -> Result<()> {
             // Read each row
             for result in reader.records() {
                 let record = result?;
-                let time: usize = record.get(0).unwrap().parse()?;
-                let throughput: usize = record.get(1).unwrap().parse()?;
+                let time: usize = record.get(0).unwrap().trim().parse()?;
+                let throughput: usize = record.get(1).unwrap().trim().parse()?;
 
                 let total = timeline.entry(time).or_default();
                 *total += throughput;
