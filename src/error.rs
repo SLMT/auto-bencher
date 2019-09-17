@@ -21,6 +21,8 @@ pub enum BenchError {
     // Wrapper
     ParseUtf8Error(std::string::FromUtf8Error),
     ParseIntError(std::num::ParseIntError),
+    ParseFloatError(std::num::ParseFloatError),
+    ParseBoolError(std::str::ParseBoolError),
     ParseTomlError(toml::de::Error),
     ParseJsonError(serde_json::error::Error),
     ParesPropertiesError(java_properties::PropertiesError),
@@ -47,6 +49,18 @@ impl From<toml::de::Error> for BenchError {
 impl From<std::num::ParseIntError> for BenchError {
     fn from(error: std::num::ParseIntError) -> Self {
         BenchError::ParseIntError(error)
+    }
+}
+
+impl From<std::num::ParseFloatError> for BenchError {
+    fn from(error: std::num::ParseFloatError) -> Self {
+        BenchError::ParseFloatError(error)
+    }
+}
+
+impl From<std::str::ParseBoolError> for BenchError {
+    fn from(error: std::str::ParseBoolError) -> Self {
+        BenchError::ParseBoolError(error)
     }
 }
 
@@ -99,6 +113,9 @@ impl std::fmt::Display for BenchError {
             BenchError::CommandFailed(cmd, code, stderr) => write!(f,
                 "command '{}' fails with return code {}.\nError message: {}",
                 cmd, code, stderr),
+            BenchError::CommandFailedOnRemote(ip, cmd, code, stderr) => write!(f,
+                "command '{}' fails on {} with return code {}.\nError message: {}",
+                cmd, ip, code, stderr),
             BenchError::FileNotFound(path) => write!(f,
                 "file not found: '{}'", path),
             BenchError::Message(s) => write!(f, "{}", s),
@@ -112,6 +129,8 @@ impl Error for BenchError {
         match self {
             BenchError::ParseUtf8Error(e) => Some(e),
             BenchError::ParseIntError(e) => Some(e),
+            BenchError::ParseFloatError(e) => Some(e),
+            BenchError::ParseBoolError(e) => Some(e),
             BenchError::ParseTomlError(e) => Some(e),
             BenchError::ParseJsonError(e) => Some(e),
             BenchError::ParesPropertiesError(e) => Some(e),

@@ -2,10 +2,12 @@
 mod error;
 mod config;
 mod command;
+mod preparation;
 mod subcommands;
 mod parameters;
 mod properties;
 mod connections;
+mod threads;
 
 use clap::{Arg, ArgMatches, App};
 use log::*;

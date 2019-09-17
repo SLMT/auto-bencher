@@ -25,6 +25,7 @@ pub struct Jdk {
     pub use_custom_jdk: bool,
     pub dir_name: String,
     pub package_path: String,
+    pub jvm_args: String,
     #[serde(skip)]
     pub package_filename: String,
     #[serde(skip)]
@@ -35,8 +36,9 @@ pub struct Jdk {
 pub struct Machines {
     #[serde(skip)]
     pub all: Vec<String>,
-    pub server: String,
-    pub client: String
+    pub sequencer: Option<String>,
+    pub servers: Vec<String>,
+    pub clients: Vec<String>
 }
 
 impl Config {
@@ -73,7 +75,10 @@ impl Config {
     }
 
     fn generate_all_ips(&mut self) {
-        self.machines.all.push(self.machines.server.clone());
-        self.machines.all.push(self.machines.client.clone());
+        if let Some(seq) = &self.machines.sequencer {
+            self.machines.all.push(seq.clone());
+        }
+        self.machines.all.append(&mut self.machines.servers.clone());
+        self.machines.all.append(&mut self.machines.clients.clone());
     }
 }

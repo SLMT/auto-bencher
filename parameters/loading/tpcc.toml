@@ -1,11 +1,19 @@
 
-[basic]
-"JAR_DIR" = "load"
+[auto_bencher]
+jar_dir = "load"
+server_count = "3" # without the sequencer
+server_client_ratio = "1.0" # client / server
+max_server_per_machine = "1"
+max_client_per_machine = "2"
 
 [vanilladb]
-"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "512000"
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1024000" # 4GB
 "org.vanilladb.core.storage.file.io.IoAllocator.USE_O_DIRECT" = "true"
 
 [vanillabench]
 "org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "2"
-"org.vanilladb.bench.benchmarks.tpcc.TpccConstants.NUM_WAREHOUSES" = "5"
+"org.vanilladb.bench.tpcc.TpccConstants.NUM_WAREHOUSES" = "3"
+
+[elasql]
+"org.elasql.server.Elasql.SERVICE_TYPE" = "1"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "1"

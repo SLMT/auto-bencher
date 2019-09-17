@@ -10,5 +10,7 @@ package_path = "package/jdk-8u211-linux-x64.tar.gz"
 jvm_args = "-Xmx4g -Xms4g"
 
 [machines]
-server = "192.168.1.11"
-client = "192.168.1.12"
+# [Optional] if no sequencer is set, the system will pick one of servers as the sequencer.
+sequencer = "192.168.1.100"
+servers = ["192.168.1.11"]
+clients = ["192.168.1.12"]
