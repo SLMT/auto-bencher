@@ -129,7 +129,7 @@ impl Server {
     }
 
     pub fn start(&self) -> Result<()> {
-        info!("Starting {}...", self.proc_name);
+        debug!("Starting {}...", self.proc_name);
         // [db name] [server id] ([is sequencer])
         let prog_args = if self.is_sequencer {
             format!("{} {} 1", self.db_name, self.connection_info.id)

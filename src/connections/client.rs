@@ -51,7 +51,7 @@ impl Client {
     }
 
     pub fn start(&self, action: Action) -> Result<()> {
-        info!("Starting client {}...", self.id());
+        debug!("Starting client {}...", self.id());
         // [client id] [action]
         let prog_args = format!("{} {}",
             self.connection_info.id, action.as_int());
@@ -67,7 +67,7 @@ impl Client {
             &self.connection_info.ip,
             &cmd
         )?;
-        info!("Client {} is running.", self.id());
+        debug!("Client {} is running.", self.id());
         Ok(())
     }
 

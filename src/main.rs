@@ -7,6 +7,7 @@ mod subcommands;
 mod parameters;
 mod properties;
 mod connections;
+mod threads;
 
 use clap::{Arg, ArgMatches, App};
 use log::*;

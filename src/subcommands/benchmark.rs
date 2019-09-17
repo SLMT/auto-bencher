@@ -1,5 +1,5 @@
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::collections::BTreeMap;
 
@@ -40,7 +40,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
     // Prepare for the final report
     let main_report_dir = create_report_dir()?;
-    let mut writer = get_report_writer(&main_report_dir)?;
+    let mut writer = get_main_report_writer(&main_report_dir)?;
     write_csv_header(&mut writer, &param_list[0])?;
 
     // Running jobs
@@ -49,9 +49,9 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
         let job_report_dir = create_job_dir(&main_report_dir, job_id)?;
 
-        let throughput_str = match super::run_server_and_client(
+        let throughput_str = match super::run(
             config, &param_list[job_id],
-            &db_name, Action::Benchmarking, Some(job_report_dir.clone())
+            &db_name, Action::Benchmarking, Some(job_report_dir.display().to_string())
         ) {
             Ok(ths) => {
                 let mut total_throughput = 0;
@@ -68,7 +68,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
         };
 
         info!("Writing the result to the report...");
-        aggregate_results(&job_report_dir)?;
+        aggregate_results(&main_report_dir, job_id)?;
         write_report(&mut writer, &param_list[job_id], &throughput_str)?;
         info!("Finished writing the result of job {}", job_id);
     }
@@ -79,27 +79,31 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn create_report_dir() -> Result<String> {
+fn create_report_dir() -> Result<PathBuf> {
     let dt = Local::now();
     let date_str = dt.format("%Y-%m-%d").to_string();
     let time_str = dt.format("%H-%M-%S").to_string();
-    let report_dir_path = format!("reports/{}/{}", date_str, time_str);
+    let mut report_dir_path = PathBuf::new();
+    report_dir_path.push("reports");
+    report_dir_path.push(date_str);
+    report_dir_path.push(time_str);
     std::fs::create_dir_all(&report_dir_path)?;
     Ok(report_dir_path)
 }
 
-fn create_job_dir(main_report_dir: &str, job_id: usize) -> Result<String> {
-    let job_dir = format!("{}/job-{}", main_report_dir, job_id);
+fn create_job_dir(main_report_dir: &Path, job_id: usize) -> Result<PathBuf> {
+    let job_dir = main_report_dir.join(&format!("job-{}", job_id));
     std::fs::create_dir_all(&job_dir)?;
     Ok(job_dir)
 }
 
-fn aggregate_results(report_dir: &str) -> Result<()> {
+fn aggregate_results(main_dir: &Path, job_id: usize) -> Result<()> {
     // Prepare variables
     let mut timeline: BTreeMap<usize, usize> = BTreeMap::new();
 
     // Open each csv files
-    for entry in std::fs::read_dir(report_dir)? {
+    let job_dir = main_dir.join(&format!("job-{}", job_id));
+    for entry in std::fs::read_dir(job_dir)? {
         let filepath = entry?.path();
         if filepath.is_file() && filepath.extension().unwrap() == "csv" {
             
@@ -122,8 +126,8 @@ fn aggregate_results(report_dir: &str) -> Result<()> {
     }
 
     // Write to an output file
-    let filename = format!("{}/timeline.csv", report_dir);
-    let mut writer = csv::Writer::from_path(filename)?;
+    let timeline_filename = main_dir.join(&format!("job-{}-timeline.csv", job_id));
+    let mut writer = csv::Writer::from_path(timeline_filename)?;
     writer.write_record(&["time", "throughput"])?;
     for (time, throughput) in timeline {
         writer.write_record(&[time.to_string(), throughput.to_string()])?;
@@ -133,10 +137,9 @@ fn aggregate_results(report_dir: &str) -> Result<()> {
     Ok(())
 }
 
-fn get_report_writer(report_dir: &str) -> Result<csv::Writer<File>> {
-    std::fs::create_dir_all(report_dir)?;
-    let path = format!("{}/throughput.csv", report_dir);
-    Ok(csv::Writer::from_path(path)?)
+fn get_main_report_writer(report_dir: &Path) -> Result<csv::Writer<File>> {
+    let file_path = report_dir.join("throughput.csv");
+    Ok(csv::Writer::from_path(file_path)?)
 }
 
 fn write_csv_header(writer: &mut csv::Writer<File>,
