@@ -37,3 +37,4 @@
 - ~~只需要在一個 mapping table 內加入 tunable parameter，就可以自動產生 properties files~~
 - 就算沒跑完也要把 client report 或是 benchmark report 拉回來
 - 禁止在 parameter file 中設定會被 auto bencher 寫入的 property (例如 `STAND_ALONE_SEQUENCER`)
+- 需要能夠偵測 process 消失 (例如異常終止)

@@ -7,7 +7,11 @@ remote_work_dir = "auto-bencher-workspace"
 use_custom_jdk = true # Reserved.
 dir_name = "jdk1.8.0_211"
 package_path = "package/jdk-8u211-linux-x64.tar.gz"
-jvm_args = "-Xmx4g -Xms4g"
+
+[jdk.vmargs]
+sequencer = "-Xmx4g -Xms4g"
+servers = "-Xmx4g -Xms4g"
+clients = "-Xmx4g -Xms4g"
 
 [machines]
 # [Optional] if no sequencer is set, the system will pick one of servers as the sequencer.

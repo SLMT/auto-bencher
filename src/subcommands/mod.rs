@@ -21,12 +21,8 @@ fn run(config: &Config, parameter: &Parameter,
         generate_connection_list(config, parameter, action)?;
     
     // Prepare the bench dir
-    let mut vm_args = crate::preparation::prepare_bench_dir(
+    let vm_args = crate::preparation::prepare_bench_dir(
         &config, parameter, &sequencer, &server_list, &client_list)?;
-    
-    // Add other vm arguments
-    vm_args.push_str(" ");
-    vm_args.push_str(&config.jdk.jvm_args);
 
     info!("Connecting to machines...");
 
