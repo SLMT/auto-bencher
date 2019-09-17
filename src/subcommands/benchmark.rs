@@ -47,7 +47,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     for job_id in 0 .. param_list.len() {
         info!("Running job {}...", job_id);
 
-        let job_report_dir = format!("{}/job-{}", main_report_dir, job_id);
+        let job_report_dir = create_job_dir(&main_report_dir, job_id)?;
 
         let throughput_str = match super::run_server_and_client(
             config, &param_list[job_id],
@@ -81,11 +81,17 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
 fn create_report_dir() -> Result<String> {
     let dt = Local::now();
-    let date_str = dt.format("%Y_%m_%d").to_string();
-    let time_str = dt.format("%H_%M_%S").to_string();
+    let date_str = dt.format("%Y-%m-%d").to_string();
+    let time_str = dt.format("%H-%M-%S").to_string();
     let report_dir_path = format!("reports/{}/{}", date_str, time_str);
     std::fs::create_dir_all(&report_dir_path)?;
     Ok(report_dir_path)
+}
+
+fn create_job_dir(main_report_dir: &str, job_id: usize) -> Result<String> {
+    let job_dir = format!("{}/job-{}", main_report_dir, job_id);
+    std::fs::create_dir_all(&job_dir)?;
+    Ok(job_dir)
 }
 
 fn aggregate_results(report_dir: &str) -> Result<()> {
