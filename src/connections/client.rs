@@ -129,11 +129,11 @@ impl Client {
         let start = output.find("TOTAL")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
-            ))? + 11;
+            ))? + 6;
         let end = output[start ..].find("avg")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
-            ))? + start;
+            ))? + start - 1;
         Ok(output[start..end].parse()?)
     }
 
