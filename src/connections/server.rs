@@ -165,12 +165,17 @@ impl Server {
     pub fn check_for_error(&self) -> Result<()> {
         if let Ok(output) = self.grep_log("Exception") {
             return Err(BenchError::Message(
-                format!("Server error: {}", output)));
+                format!("Server {} error: {}", self.id(), output)));
         }
 
         if let Ok(output) = self.grep_log("error") {
             return Err(BenchError::Message(
-                format!("Server error: {}", output)));
+                format!("Server {} error: {}", self.id(), output)));
+        }
+
+        if let Ok(output) = self.grep_log("SEVERE") {
+            return Err(BenchError::Message(
+                format!("Server {} error: {}", self.id(), output)));
         }
 
         Ok(())

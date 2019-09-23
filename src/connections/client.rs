@@ -87,6 +87,11 @@ impl Client {
                 format!("Client {} error: {}", self.id(), output)));
         }
 
+        if let Ok(output) = self.grep_log("SEVERE") {
+            return Err(BenchError::Message(
+                format!("Client {} error: {}", self.id(), output)));
+        }
+
         match self.grep_log(keyword) {
             Ok(_) => Ok(true),
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>

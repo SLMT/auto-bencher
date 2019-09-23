@@ -30,9 +30,9 @@ pub fn create_server_thread(barrier: Arc<Barrier>,
             _ => ThreadResult::ServerSucceed
         };
         if server.is_sequencer() {
-            info!("The sequencer finished.");
+            debug!("The sequencer finished.");
         } else {
-            info!("Server {} finished.", server.id());
+            debug!("Server {} finished.", server.id());
         }
         result_ch.send(result).unwrap();
     })

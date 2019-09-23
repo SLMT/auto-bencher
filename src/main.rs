@@ -33,6 +33,7 @@ fn main() {
                        .subcommand(subcommands::init_env::get_sub_command())
                        .subcommand(subcommands::load::get_sub_command())
                        .subcommand(subcommands::benchmark::get_sub_command())
+                       .subcommand(subcommands::all_execute::get_sub_command())
                        .get_matches();
     
     match execute(matches) {
@@ -60,6 +61,8 @@ fn execute(matches: ArgMatches) -> Result<(), BenchError> {
         subcommands::load::execute(&config, matches)?;
     } else if let Some(matches) = matches.subcommand_matches("bench") {
         subcommands::benchmark::execute(&config, matches)?;
+    } else if let Some(matches) = matches.subcommand_matches("all-exec") {
+        subcommands::all_execute::execute(&config, matches)?;
     }
 
     Ok(())

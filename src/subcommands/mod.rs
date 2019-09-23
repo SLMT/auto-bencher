@@ -2,7 +2,7 @@
 pub mod init_env;
 pub mod load;
 pub mod benchmark;
-
+pub mod all_execute;
 
 use log::*;
 

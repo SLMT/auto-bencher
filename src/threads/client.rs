@@ -26,7 +26,7 @@ pub fn create_client_thread(barrier: Arc<Barrier>,
             },
             Ok(th) => ThreadResult::ClientSucceed(th)
         };
-        info!("Client {} finished.", client.id());
+        debug!("Client {} finished.", client.id());
         result_ch.send(result).unwrap();
     })
 }

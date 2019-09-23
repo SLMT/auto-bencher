@@ -126,5 +126,7 @@ pub fn run_in_threads(config: &Config, db_name: &str,
         thread.join().unwrap();
     }
 
+    info!("All threads exits properly.");
+
     Ok(client_results)
 }
