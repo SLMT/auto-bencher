@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use std::fs::File;
 use std::collections::BTreeMap;
 
+use colored::*;
 use log::*;
 use clap::{ArgMatches, Arg, App, SubCommand};
 use chrono::prelude::*;
@@ -42,6 +43,8 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     // Read the parameter file
     let param_list = ParameterList::from_file(Path::new(param_file))?;
     let param_list = param_list.to_vec();
+    info!("Analyzing parameter file finished. {} jobs to run.",
+            param_list.len().to_string().cyan());
 
     // Prepare for the final report
     let main_report_dir = create_report_dir()?;
