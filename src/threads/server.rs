@@ -40,6 +40,11 @@ pub fn create_server_thread(barrier: Arc<Barrier>,
 
 fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
     stop_sign: Arc<RwLock<bool>>, action: Action) -> Result<()> {
+
+    if server.id() == 0 {
+        info!("Preparing servers...");
+    }
+
     server.send_bench_dir()?;
 
     match action {
