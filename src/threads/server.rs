@@ -72,6 +72,9 @@ fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
     if server.id() == 0 {
         info!("All servers are ready.");
     }
+    
+    // Wait for client started
+    barrier.wait();
 
     let mut stop = false;
     while !stop {

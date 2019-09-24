@@ -45,6 +45,14 @@ fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
     }
 
     client.start(action)?;
+
+    // Wait for client started
+    barrier.wait(); // client started
+
+    if client.id() == 0 {
+        info!("All clients are running. Waiting for benchmarking...");
+    }
+
     while !client.check_for_finished(action)? {
         thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
     }
