@@ -4,16 +4,16 @@
 
 - `auto-bencher init-env`
     - 初始化與檢察環境
-- (not yet) `auto-bencher clean`
-    - 清空環境，刪除所有此程式建立的檔案
-- (not yet) `auto-bencher execute-cmd [CMD]`
-    - 執行給定指令 `CMD`
+- `auto-bencher all-exec [CMD]`
+    - 執行給定指令 `[CMD]`
 - `auto-bencher load [db name] [parameter file]`
     - 為給定數量的機器跑載入資料
-- (not yet) `auto-bencher check-ready`
-    - 檢查環境是否該有的東西都有，包括 benchmark 的資料都準備好了
 - `auto-bencher bench [db name] [parameter file]`
     - 用給定的參數跑 benchmarks
+- (not yet) `auto-bencher clean`
+    - 清空環境，刪除所有此程式建立的檔案
+- (not yet) `auto-bencher check-ready`
+    - 檢查環境是否該有的東西都有，包括 benchmark 的資料都準備好了
 
 ### Refactoring
 
