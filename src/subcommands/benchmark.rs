@@ -22,12 +22,17 @@ pub fn get_sub_command<'a, 'b>() -> App<'a, 'b> {
                     .help("The parameters of running the benchmarks")
                     .required(true)
                     .index(2))
+                .arg(Arg::with_name("IGNORE ERROR")
+                    .long("ignore-error")
+                    .short("i")
+                    .help("If there is an error happens in a job, do not stop and proceed to the next job."))
                 .about("running the benchmarks using the given parameters")
 }
 
 pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
     let db_name = args.value_of("DB NAME").unwrap();
     let param_file = args.value_of("PARAMETER FILE").unwrap();
+    let ignore_error = args.is_present("IGNORE ERROR");
     
     info!("Preparing for running benchmarks...");
     info!("Using parameter file '{}'", param_file);
@@ -63,7 +68,12 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
             },
             Err(e) => {
                 info!("Job {} finished with an error: {}", job_id, e);
-                "error".to_owned()
+
+                if ignore_error {
+                    "error".to_owned()
+                } else {
+                    return Err(e);
+                }
             }
         };
 
