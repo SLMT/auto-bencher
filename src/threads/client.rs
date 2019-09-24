@@ -50,7 +50,7 @@ fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
     barrier.wait(); // client started
 
     if client.id() == 0 {
-        info!("All clients are running. Waiting for benchmarking...");
+        info!("All clients are running. Waiting for finishing...");
     }
 
     while !client.check_for_finished(action)? {
