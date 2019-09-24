@@ -43,7 +43,7 @@ impl Client {
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    info!("No previous results are found on '{}'", self.connection_info.ip),
+                    debug!("No previous results are found on '{}'", self.connection_info.ip),
             Err(e) => return Err(e),
             _ => {}
         }
