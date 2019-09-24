@@ -45,7 +45,7 @@ fn main() {
 fn set_logger_level() {
     match std::env::var("RUST_LOG") {
         Ok(_) => {},
-        Err(_) => std::env::set_var("RUST_LOG", "DEBUG"),
+        Err(_) => std::env::set_var("RUST_LOG", "INFO"),
     }
 }
 

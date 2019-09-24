@@ -64,6 +64,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
                     total_throughput += th.unwrap();
                 }
                 info!("Job {} finished successfully.", job_id);
+                info!("The total throughput of job {} is {}.", job_id, total_throughput);
                 total_throughput.to_string()
             },
             Err(e) => {

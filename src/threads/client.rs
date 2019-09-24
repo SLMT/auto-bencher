@@ -60,7 +60,7 @@ fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
     if let Action::Benchmarking = action {
         client.pull_csv(&report_dir.unwrap())?;
         let throughput = client.get_total_throughput()?;
-        info!("The total throughput of client {} is {}",
+        debug!("The total throughput of client {} is {}",
             client.id(), throughput);
         Ok(Some(throughput))
     } else {
