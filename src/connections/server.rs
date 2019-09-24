@@ -181,10 +181,6 @@ impl Server {
         Ok(())
     }
 
-    pub fn pull_log(&self) -> Result<()> {
-        unimplemented!();
-    }
-
     pub fn id(&self) -> usize {
         self.connection_info.id
     }

@@ -100,10 +100,6 @@ impl Client {
         }
     }
 
-    pub fn pull_log(&self) -> Result<()> {
-        unimplemented!();
-    }
-
     pub fn pull_csv(&self, dest: &str) -> Result<()> {
         // Get the file name of the csv
         let filename = self.grep_csv_filename()?;

@@ -42,23 +42,6 @@ pub fn execute(config: &Config, _: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
-fn check_working_dir(config: &Config, ip: &str) -> Result<bool> {
-    let cmd = format!("ls -l {}", config.system.remote_work_dir);
-
-    match command::ssh(&config.system.user_name, ip, &cmd) {
-        Err(BenchError::CommandFailedOnRemote(_, _, code, _)) if code == 2 => {
-            Ok(false)
-        },
-        Err(e) => {
-            Err(e)
-        },
-        Ok(output) => {
-            trace!("ls: {}", output);
-            Ok(true)
-        } 
-    }
-}
-
 fn create_working_dir(config: &Config, ip: &str) -> Result<()> {
     info!("Creating a working directory on {}", ip);
 

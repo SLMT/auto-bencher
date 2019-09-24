@@ -46,7 +46,7 @@ pub fn execute(config: &Config, args: &ArgMatches) -> Result<()> {
 
         if let Err(e) = result {
             if ignore_error {
-                error!("{}", e);
+                warn!("{}", e);
             } else {
                 return Err(e);
             }
