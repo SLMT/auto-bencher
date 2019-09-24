@@ -59,7 +59,7 @@ impl<'a> Parameter<'a> {
 
     pub fn override_properties(&self, files: &mut PropertiesFileMap) {
         for (param_file, param_lines) in &self.params {
-            if *param_file == "basic" {
+            if *param_file == "auto_bencher" {
                 continue;
             }
 

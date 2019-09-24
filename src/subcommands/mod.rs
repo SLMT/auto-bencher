@@ -83,7 +83,7 @@ fn kill_benchmarker_on_all_machines(config: &Config) -> Result<()> {
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    info!("No existing process is found on '{}'", machine),
+                    debug!("No existing process is found on '{}'", machine),
             Err(e) => return Err(e),
             _ => {}
         }

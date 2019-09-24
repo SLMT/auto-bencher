@@ -83,7 +83,8 @@ impl PropertiesFileMap {
         if let Some(file) = self.files.get_mut(filename) {
             file.set(property, value);
         } else {
-            warn!("Cannot find properties file: {}.properties", filename);
+            warn!("Cannot find properties file: {}.properties for {}",
+                    filename, property);
         }
     }
 
