@@ -63,7 +63,7 @@ impl Server {
         );
         match result {
             Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    debug!("No backup database is found on '{}'", self.connection_info.ip),
+                    debug!("No previous database is found on '{}'", self.connection_info.ip),
             Err(e) => return Err(e),
             _ => {}
         }
@@ -108,9 +108,9 @@ impl Server {
     }
 
     pub fn reset_db_dir(&self) -> Result<()> {
-        // Sequencer does not have database
+        // The sequencer just has to delete its db
         if self.is_sequencer {
-            return Ok(());
+            return self.delete_db_dir();
         }
 
         debug!("Resetting the db of {}...", self.proc_name);
