@@ -38,7 +38,8 @@ fn execute_client_thread(client: &Client, barrier: Arc<Barrier>,
 
     // Wait for the server ready
     barrier.wait(); // prepared
-    barrier.wait(); // ready
+    barrier.wait(); // normal servers ready
+    barrier.wait(); // the sequencer ready
 
     if client.id() == 0 {
         info!("Starting clients...");

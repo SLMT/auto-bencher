@@ -60,18 +60,23 @@ fn execute_server_thread(server: &Server, barrier: Arc<Barrier>,
     // Wait for other servers prepared
     barrier.wait();
 
-    server.start()?;
-    while !server.check_for_ready()? {
-        thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
-    }
-
     if server.is_sequencer() {
+        barrier.wait(); // wait for normal servers ready
+        server.start()?;
+        while !server.check_for_ready()? {
+            thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
+        }
         debug!("The sequencer is ready.");
     } else {
+        server.start()?;
+        while !server.check_for_ready()? {
+            thread::sleep(Duration::from_secs(CHECKING_INTERVAL));
+        }
         debug!("Server {} is ready.", server.id());
+        barrier.wait(); // wait for other normal servers ready
     }
 
-    // Wait for all servers ready
+    // Wait for all servers and the sequencer ready
     barrier.wait();
 
     if server.id() == 0 {
