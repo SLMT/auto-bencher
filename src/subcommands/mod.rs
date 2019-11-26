@@ -28,7 +28,15 @@ fn run(config: &Config, parameter: &Parameter,
     info!("Connecting to machines...");
 
     info!("Killing existing benchmarker processes...");
-    kill_benchmarker_on_all_machines(config)?;
+    if let Some(ref seq) = sequencer {
+        kill_benchmarker(config, seq)?;
+    }
+    for server in &server_list {
+        kill_benchmarker(config, server)?;
+    }
+    for client in &client_list {
+        kill_benchmarker(config, client)?;
+    }
 
     threads::run_in_threads(config, db_name, action, report_dir,
         &vm_args, sequencer, server_list, client_list)
@@ -75,19 +83,17 @@ fn generate_connection_list(config: &Config, parameter: &Parameter, action: Acti
     Ok((sequencer, server_list, client_list))
 }
 
-fn kill_benchmarker_on_all_machines(config: &Config) -> Result<()> {
-    for machine in &config.machines.all {
-        let result = command::ssh(
-            &config.system.user_name,
-            &machine,
-            "pkill -f benchmarker"
-        );
-        match result {
-            Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
-                    debug!("No existing process is found on '{}'", machine),
-            Err(e) => return Err(e),
-            _ => {}
-        }
+fn kill_benchmarker(config: &Config, machine: &ConnectionInfo) -> Result<()> {
+    let result = command::ssh(
+        &config.system.user_name,
+        &machine.ip,
+        "pkill -f benchmarker"
+    );
+    match result {
+        Err(BenchError::CommandFailedOnRemote(_, _, 1, _)) =>
+                debug!("No existing process is found on '{}'", machine.ip),
+        Err(e) => return Err(e),
+        _ => {}
     }
     Ok(())
 }
