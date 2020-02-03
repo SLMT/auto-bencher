@@ -126,15 +126,15 @@ impl Client {
             &self.connection_info.ip,
             &cmd
         )?;
-        // Output should be 'TOTAL XXXXX avg latency: XX ms'
-        let start = output.find("TOTAL")
+        // Output should be 'TOTAL - committed: XXXX, aborted: XXXX, avg latency: XXX ms'
+        let start = output.find("committed")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
-            ))? + 6;
-        let end = output[start ..].find("avg")
+            ))? + 11;
+        let end = output[start ..].find("aborted")
             .ok_or(BenchError::Message(
                 format!("cannot parse result file: {}", output)
-            ))? + start - 1;
+            ))? + start - 2;
         Ok(output[start..end].parse()?)
     }
 
