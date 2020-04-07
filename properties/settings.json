@@ -13,7 +13,7 @@
     },
     {
         "id": "org.vanilladb.comm.config.file",
-        "filename": "vanilladbcomm.properties"
+        "filename": "vanillacomm.properties"
     },
     {
         "id": "org.elasql.bench.config.file",

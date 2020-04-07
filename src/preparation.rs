@@ -89,8 +89,8 @@ fn set_connection_properties(map: &mut PropertiesFileMap,
         server_view.push_str(&seq_info.to_string());
     }
     map.set(
-        "vanilladbcomm",
-        "org.vanilladb.comm.server.ServerAppl.SERVER_VIEW",
+        "vanillacomm",
+        "org.vanilladb.comm.view.ProcessView.SERVER_VIEW",
         &server_view
     );
 
@@ -103,22 +103,22 @@ fn set_connection_properties(map: &mut PropertiesFileMap,
         client_view.push_str(&client.to_string());
     }
     map.set(
-        "vanilladbcomm",
-        "org.vanilladb.comm.client.ClientAppl.CLIENT_VIEW",
+        "vanillacomm",
+        "org.vanilladb.comm.view.ProcessView.CLIENT_VIEW",
         &client_view
     );
 
     // Set stand alone sequencer
     if let Some(_) = sequencer {
         map.set(
-            "vanilladbcomm",
-            "org.vanilladb.comm.server.ServerAppl.STAND_ALONE_SEQUENCER",
+            "vanillacomm",
+            "org.vanilladb.comm.ProcessView.STAND_ALONE_SEQUENCER",
             "true"
         );
     } else {
         map.set(
-            "vanilladbcomm",
-            "org.vanilladb.comm.server.ServerAppl.STAND_ALONE_SEQUENCER",
+            "vanillacomm",
+            "org.vanilladb.comm.ProcessView.STAND_ALONE_SEQUENCER",
             "false"
         );
     }
