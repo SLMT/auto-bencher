@@ -84,6 +84,7 @@ fn set_connection_properties(map: &mut PropertiesFileMap,
         }
         server_view.push_str(&server.to_string());
     }
+    // The sequencer is one of the servers and the last on the server list
     if let Some(seq_info) = sequencer {
         server_view.push_str(", ");
         server_view.push_str(&seq_info.to_string());
@@ -107,21 +108,6 @@ fn set_connection_properties(map: &mut PropertiesFileMap,
         "org.vanilladb.comm.view.ProcessView.CLIENT_VIEW",
         &client_view
     );
-
-    // Set stand alone sequencer
-    if let Some(_) = sequencer {
-        map.set(
-            "vanillacomm",
-            "org.vanilladb.comm.ProcessView.STAND_ALONE_SEQUENCER",
-            "true"
-        );
-    } else {
-        map.set(
-            "vanillacomm",
-            "org.vanilladb.comm.ProcessView.STAND_ALONE_SEQUENCER",
-            "false"
-        );
-    }
 
     Ok(())
 }
