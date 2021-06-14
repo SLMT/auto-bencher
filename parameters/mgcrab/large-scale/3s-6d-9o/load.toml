@@ -7,7 +7,7 @@ max_server_per_machine = "1"
 max_client_per_machine = "2"
 
 [vanilladb]
-"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1048576" # 1GB (each buffer has 4 KB)
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1048576" # 4GB (each buffer has 4 KB)
 "org.vanilladb.core.storage.file.io.IoAllocator.USE_O_DIRECT" = "true"
 
 [vanillabench]
