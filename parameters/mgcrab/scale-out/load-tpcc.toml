@@ -1,0 +1,24 @@
+
+[auto_bencher]
+jar_dir = "merge"
+server_count = "3" # without the sequencer
+server_client_ratio = "1.0" # client / server
+max_server_per_machine = "1"
+max_client_per_machine = "2"
+
+[vanilladb]
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1048576" # 1GB (each buffer has 4 KB)
+"org.vanilladb.core.storage.file.io.IoAllocator.USE_O_DIRECT" = "true"
+
+[vanillabench]
+"org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "2"
+
+[elasql]
+"org.elasql.server.Elasql.SERVICE_TYPE" = "1"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "1"
+
+[elasqlbench]
+"org.elasql.bench.benchmarks.tpcc.ElasqlTpccConstants.PARTITION_STRATEGY" = "2"
+"org.elasql.bench.server.metadata.migration.scaleout.TpccScaleoutBeforePartPlan.NUM_HOT_PARTS" = "1"
+"org.elasql.bench.server.metadata.migration.scaleout.TpccScaleoutBeforePartPlan.HOT_WAREHOUSE_PER_HOT_PART" = "1"
+

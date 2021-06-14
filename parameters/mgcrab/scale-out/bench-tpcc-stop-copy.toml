@@ -1,0 +1,35 @@
+
+[auto_bencher]
+jar_dir = "merge"
+server_count = "3" # without the sequencer
+server_client_ratio = "1.0" # client / server
+max_server_per_machine = "1"
+max_client_per_machine = "3"
+
+[vanilladb]
+"org.vanilladb.core.storage.buffer.BufferMgr.BUFFER_POOL_SIZE" = "1048576" # 1GB (each buffer has 4 KB)
+"org.vanilladb.core.storage.file.io.IoAllocator.USE_O_DIRECT" = "true"
+
+[vanillabench]
+"org.vanilladb.bench.BenchmarkerParameters.BENCH_TYPE" = "2"
+"org.vanilladb.bench.BenchmarkerParameters.WARM_UP_INTERVAL" = "0"
+"org.vanilladb.bench.BenchmarkerParameters.BENCHMARK_INTERVAL" = "600000"
+
+[elasql]
+"org.elasql.server.Elasql.SERVICE_TYPE" = "1"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "20"
+
+# Migration Settings
+"org.elasql.migration.MigrationSettings.ENABLE_MIGRATION" = "true"
+"org.elasql.migration.MigrationSettings.MIGRATION_START_TIME" = "120000"
+"org.elasql.migration.MigrationSettings.PLANNING_ALGORITHM" = "0"
+# 0: Stop-copy, 1: Albatross, 2: Squall, 3: MgCrab
+"org.elasql.migration.MigrationSettings.MIGRATION_ALGORITHM" = "0"
+"org.elasql.migration.MigrationSettings.USE_BYTES_FOR_CHUNK_SIZE" = "false"
+"org.elasql.migration.MigrationSettings.CHUNK_SIZE_IN_COUNT" = "15000"
+
+[elasqlbench]
+"org.elasql.bench.benchmarks.tpcc.ElasqlTpccConstants.PARTITION_STRATEGY" = "2"
+"org.elasql.bench.server.metadata.migration.scaleout.TpccScaleoutBeforePartPlan.NUM_HOT_PARTS" = "1"
+"org.elasql.bench.server.metadata.migration.scaleout.TpccScaleoutBeforePartPlan.HOT_WAREHOUSE_PER_HOT_PART" = "1"
+
