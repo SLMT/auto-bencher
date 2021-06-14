@@ -1,40 +1,54 @@
-# Auto Bencher 自動 Benchmark 君
+# Auto Bencher
 
-## 功能
+A deployment and benchmarking tool that aims to benchmark [ElaSQL](https://github.com/elasql/elasql) with [ElaSQL-Bench](https://github.com/elasql/elasqlbench) on a cluster.
 
-- `auto-bencher init-env`
-    - 初始化與檢察環境
-- `auto-bencher all-exec [CMD]`
-    - 執行給定指令 `[CMD]`
-- `auto-bencher load [db name] [parameter file]`
-    - 為給定數量的機器跑載入資料
-- `auto-bencher bench [db name] [parameter file]`
-    - 用給定的參數跑 benchmarks
-- (not yet) `auto-bencher clean`
-    - 清空環境，刪除所有此程式建立的檔案
-- (not yet) `auto-bencher check-ready`
-    - 檢查環境是否該有的東西都有，包括 benchmark 的資料都準備好了
+## Prerequisite
 
-### Refactoring
+### Environments
 
-- Improve the error handling (stack trace ?)
+- Operating System: UNIX-based OS
+  - Have been tested on CentOS 7
+- An account that can login to all the machines in the cluster with the same username and without entering password via SSH
+  - In other words, the system on every machine should have a user with same username.
+  - Logging in without using a password can be achieved by `ssh-copy-id` (see [this](https://linuxhint.com/use-ssh-copy-id-command/) for more information).
+- Rust Development Environment
+  - Only need to be installed on the machine where this tool runs.
+  - Since this tool is written in Rust, we need its package manager to setup dependency and compile the program.
+  - See [this page](https://www.rust-lang.org/tools/install) for how to install Rust environment.
+- Java Development Kit (JDK) 8
+  - We just need a `tar.gz` file. No need to be installed on the machines. Auto Bencher will deploy the given JDK on the machines automatically.
 
-### Bug To Fix
+### Knowledge
 
-- Delete java runtime zip on the machines
+All the following knowledge can be learned from [Getting Started Guide](getting_started.pdf) of ElaSQL.
 
-### 期望功能
+- Knowing how to package [ElaSQL-Bench](https://github.com/elasql/elasqlbench) into runnable JARs.
+  - Specifically, we need a `server.jar` for servers and a `client.jar` for clients.
+- Knowing how to configure [ElaSQL-Bench](https://github.com/elasql/elasqlbench).
 
-- ~~必須要檢查 server 跟 client 是否都正常啟動~~
-- 能夠偵測 exception 以外的錯誤 (程式意外終止)
-- ~~能夠自動抓取 properties 產生 parameter file~~
-- ~~能夠合併 csv report，並另外產生一個 total summary 的 csv~~
-- log 先產生在外面，等到跑完之後再一併放回 results
-- CPU 監測及即時繪圖
-- throughput 即時繪圖
-- 提供一個功能是在每個 stage 安插指令
-- ~~應該在 loading 時提供要 load 的機器數，config 只能設定總共有幾台機器~~
-- ~~只需要在一個 mapping table 內加入 tunable parameter，就可以自動產生 properties files~~
-- 就算沒跑完也要把 client report 或是 benchmark report 拉回來
-- 禁止在 parameter file 中設定會被 auto bencher 寫入的 property (例如 `STAND_ALONE_SEQUENCER`)
-- 需要能夠偵測 process 消失 (例如異常終止)
+## Usage Guide
+
+We have prepared [a comprehensive guide](doc/usage-guide.pdf) for any one who want to learn how to use Auto Bencher. Check the document about the usage.
+
+## Available Commands
+
+- `cargo run init-env`
+  - Initialzes the testing environment on all the machines.
+- `cargo run load [db name] [parameter file]`
+  - Loads a testbed with the given parameters in `[parameter file]` with a assigned `[db name]`.
+- `cargo run bench [db name] [parameter file]`
+  - Benchmarks ElaSQL with the given parameters in `[parameter file]` and the testbed loaded in `[db name]` DB.
+- `cargo run all-exec [command]`
+  - Executes the given command `[command]` on all the machines.
+- `cargo run pull [pattern]`
+  - Pulls the files with the names that match `[pattern]` on all the machines.
+
+## Debugging Messages
+
+To enable debugging message for Auto Bencher, set environment variable `RUST_LOG` with `auto_bencher=DEBUG`.
+
+For example, to check the debugging message when benchmarking:
+
+```
+> RUST_LOG=auto_bencher=DEBUG cargo run bench my-db my-parameter-file
+```
