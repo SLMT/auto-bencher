@@ -20,7 +20,7 @@ A deployment and benchmarking tool that aims to benchmark [ElaSQL](https://githu
 
 ### Knowledge
 
-All the following knowledge can be learned from [Getting Started Guide](getting_started.pdf) of ElaSQL.
+All the following knowledge can be learned from [Getting Started Guide](https://github.com/elasql/documentation/blob/master/doc/getting_started.pdf) of ElaSQL.
 
 - Knowing how to package [ElaSQL-Bench](https://github.com/elasql/elasqlbench) into runnable JARs.
   - Specifically, we need a `server.jar` for servers and a `client.jar` for clients.
