@@ -17,7 +17,8 @@ max_client_per_machine = "3"
 
 [elasql]
 "org.elasql.server.Elasql.SERVICE_TYPE" = "1"
-"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "20"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.COMM_BATCH_SIZE" = "20"
+"org.elasql.storage.tx.recovery.DdRecoveryMgr.DISABLE_STORAGE_LOGGING" = "true"
 
 # Migration Settings
 "org.elasql.migration.MigrationSettings.ENABLE_MIGRATION" = "true"

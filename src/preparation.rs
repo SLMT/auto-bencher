@@ -34,7 +34,7 @@ pub fn prepare_bench_dir(config: &Config, parameter: &Parameter,
     parameter.override_properties(&mut map);
     set_paths(config, &mut map);
     set_connection_properties(&mut map, sequencer, server_list, client_list)?;
-    set_elasql_properties(&mut map, server_list.len());
+    set_elasql_properties(&mut map, sequencer);
 
     // Generate the properties files to the benchmark dir
     let prop_dir_path: PathBuf = [BENCH_DIR, PROP_DIR].iter().collect();
@@ -108,14 +108,22 @@ fn set_connection_properties(map: &mut PropertiesFileMap,
         "org.vanilladb.comm.view.ProcessView.CLIENT_VIEW",
         &client_view
     );
-
     Ok(())
 }
 
-fn set_elasql_properties(map: &mut PropertiesFileMap, server_count: usize) {
-    map.set(
-        "elasql",
-        "org.elasql.storage.metadata.PartitionMetaMgr.NUM_PARTITIONS",
-        &server_count.to_string()
-    );
+fn set_elasql_properties(map: &mut PropertiesFileMap, sequencer: &Option<ConnectionInfo>) {
+    // Set stand alone sequencer
+    if let Some(_) = sequencer {
+        map.set(
+            "elasql",
+            "org.elasql.server.Elasql.ENABLE_STAND_ALONE_SEQUENCER",
+            "true"
+        );
+    } else {
+        map.set(
+            "elasql",
+            "org.elasql.server.Elasql.ENABLE_STAND_ALONE_SEQUENCER",
+            "false"
+        );
+    }
 }
