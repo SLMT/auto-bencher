@@ -131,11 +131,7 @@ impl Server {
     pub fn start(&self) -> Result<()> {
         debug!("Starting {}...", self.proc_name);
         // [db name] [server id] ([is sequencer])
-        let prog_args = if self.is_sequencer {
-            format!("{} {} 1", self.db_name, self.connection_info.id)
-        } else {
-            format!("{} {}", self.db_name, self.connection_info.id)
-        };
+        let prog_args = format!("{} {}", self.db_name, self.connection_info.id);
         let cmd = format!("{} {} -jar {} {} > {} 2>&1 &",
             self.config.jdk.remote_java_bin,
             self.vm_args,

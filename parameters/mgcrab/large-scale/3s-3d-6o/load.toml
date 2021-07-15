@@ -15,7 +15,7 @@ max_client_per_machine = "2"
 
 [elasql]
 "org.elasql.server.Elasql.SERVICE_TYPE" = "1"
-"org.elasql.remote.groupcomm.client.BatchSpcSender.BATCH_SIZE" = "1"
+"org.elasql.remote.groupcomm.client.BatchSpcSender.COMM_BATCH_SIZE" = "1"
 
 [elasqlbench]
 "org.elasql.bench.benchmarks.tpcc.ElasqlTpccConstants.PARTITION_STRATEGY" = "2"
